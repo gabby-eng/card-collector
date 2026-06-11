@@ -428,6 +428,113 @@
     }
     .meta-value { font-family: 'Exo 2', sans-serif; font-weight: 600; font-size: 0.9rem; }
 
+    /* ── Owned shimmer effect ─────────────────────────────── */
+    .pcard-img-wrap {
+      position: relative;
+      overflow: hidden;
+      display: block;
+    }
+    /* The holographic sweep overlay */
+    .pcard-img-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        115deg,
+        transparent 0%,
+        transparent 25%,
+        rgba(255,255,255,0.08) 35%,
+        rgba(160,100,255,0.18) 42%,
+        rgba(80,180,255,0.22) 48%,
+        rgba(100,255,180,0.18) 54%,
+        rgba(255,220,80,0.18) 60%,
+        rgba(255,100,120,0.15) 66%,
+        rgba(255,255,255,0.08) 75%,
+        transparent 85%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .pcard.owned .pcard-img-wrap::after {
+      opacity: 1;
+      animation: holo-sweep 3s linear infinite;
+    }
+    @keyframes holo-sweep {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    /* Subtle gold border glow on owned cards */
+    .pcard.owned {
+      box-shadow: 0 0 0 1px rgba(245,197,24,0.4), 0 4px 20px rgba(245,197,24,0.1);
+    }
+    @media (hover: hover) {
+      .pcard.owned:hover {
+        box-shadow: 0 4px 28px rgba(245,197,24,0.3);
+      }
+    }
+
+    /* Owned star badge */
+    .owned-badge {
+      position: absolute; top: 8px; left: 8px;
+      width: 22px; height: 22px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #000;
+      z-index: 2;
+    }
+
+    /* Owned toggle button (in footer) */
+    .owned-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--muted);
+      font-size: 0.72rem; font-weight: 600;
+      padding: 6px 10px; min-height: 32px;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .owned-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .owned-btn.is-owned {
+      background: rgba(245,197,24,0.12);
+      border-color: var(--accent); color: var(--accent);
+    }
+
+    /* Owned toggle button in modal */
+    .modal-owned-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.9rem;
+      padding: 12px; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .modal-owned-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .modal-owned-btn.is-owned {
+      background: rgba(245,197,24,0.1);
+      border-color: var(--accent); color: var(--accent);
+    }
+
+    /* ── Share button ─────────────────────────────────────── */
+    .modal-share-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.9rem;
+      padding: 12px; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .modal-share-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .modal-share-btn.copied { border-color: #3ddc84; color: #3ddc84; }
+
     /* ── Add-to-collection section in modal ───────────────── */
     .modal-add-section { width: 100%; }
     .modal-add-label {
@@ -606,6 +713,10 @@
   // Structure: { collections: [{id, name, cards: {cardId: card}}], activeId }
   let store      = loadStore();
   let activeColId = store.activeId;
+
+  // ── Owned state ──────────────────────────────────────────────
+  // Separate from collections — a card can be owned without being in any list
+  let owned = loadOwned(); // Set of card IDs
 
   function activeCol() { return store.collections.find(c => c.id === activeColId); }
   function activeCards() { return activeCol()?.cards || {}; }
@@ -902,25 +1013,37 @@
 
   // ── Card DOM ──────────────────────────────────────────────────
   function buildCard(card) {
-    const inCol = !!activeCards()[card.id];
+    const inCol   = !!activeCards()[card.id];
+    const isOwned = owned.has(card.id);
     const wrap = document.createElement('div');
-    wrap.className = 'pcard' + (inCol ? ' in-collection' : '');
+    wrap.className = 'pcard' + (inCol ? ' in-collection' : '') + (isOwned ? ' owned' : '');
     wrap.onclick = () => openModal(card);
 
+    // Owned star badge (top-left)
+    if (isOwned) {
+      const ob = document.createElement('div');
+      ob.className = 'owned-badge'; ob.textContent = '✦';
+      wrap.appendChild(ob);
+    }
+
+    // In-collection check badge (top-right)
     if (inCol) {
       const badge = document.createElement('div');
-      badge.className = 'in-collection-badge';
-      badge.textContent = '✓';
+      badge.className = 'in-collection-badge'; badge.textContent = '✓';
       wrap.appendChild(badge);
     }
 
+    // Image wrapped for shimmer overlay
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'pcard-img-wrap';
     const img = document.createElement('img');
     img.className = 'pcard-img loading';
     img.alt = card.name; img.loading = 'lazy';
     img.onload  = () => img.classList.remove('loading');
     img.onerror = () => { img.classList.remove('loading'); img.style.opacity = '0.3'; };
     img.src = card.images?.small || '';
-    wrap.appendChild(img);
+    imgWrap.appendChild(img);
+    wrap.appendChild(imgWrap);
 
     const body = document.createElement('div');
     body.className = 'pcard-body';
@@ -932,13 +1055,51 @@
     footer.className = 'pcard-footer';
     footer.innerHTML = `<span class="rarity-badge">${card.rarity || '—'}</span>`;
 
+    // Owned button
+    const ownedBtn = document.createElement('button');
+    ownedBtn.className = 'owned-btn' + (isOwned ? ' is-owned' : '');
+    ownedBtn.title = isOwned ? 'Mark as not owned' : 'Mark as owned';
+    ownedBtn.textContent = isOwned ? '✦' : '✦';
+    ownedBtn.onclick = e => { e.stopPropagation(); toggleOwned(card.id, wrap, ownedBtn); };
+    footer.appendChild(ownedBtn);
+
+    // Collect button
     const btn = document.createElement('button');
     btn.className = 'collect-btn' + (inCol ? ' collected' : '');
     btn.textContent = inCol ? '✓ Added' : '+ Add';
     btn.onclick = e => { e.stopPropagation(); toggleCollect(card, btn, wrap); };
     footer.appendChild(btn);
+
     wrap.appendChild(footer);
     return wrap;
+  }
+
+  function toggleOwned(cardId, wrap, btn) {
+    if (owned.has(cardId)) {
+      owned.delete(cardId);
+      wrap.classList.remove('owned');
+      btn.classList.remove('is-owned');
+      btn.title = 'Mark as owned';
+      wrap.querySelector('.owned-badge')?.remove();
+    } else {
+      owned.add(cardId);
+      wrap.classList.add('owned');
+      btn.classList.add('is-owned');
+      btn.title = 'Mark as not owned';
+      if (!wrap.querySelector('.owned-badge')) {
+        const ob = document.createElement('div');
+        ob.className = 'owned-badge'; ob.textContent = '✦';
+        wrap.prepend(ob);
+      }
+    }
+    saveOwned();
+    // Refresh modal owned button if open
+    const modalBtn = document.getElementById('modal-owned-btn');
+    if (modalBtn && modalBtn.dataset.cardId === cardId) {
+      const nowOwned = owned.has(cardId);
+      modalBtn.classList.toggle('is-owned', nowOwned);
+      modalBtn.innerHTML = ownedBtnHtml(nowOwned);
+    }
   }
 
   function toggleCollect(card, btn, wrap) {
@@ -961,6 +1122,12 @@
     }
     saveStore(); updateCount();
     if (currentTab === 'collection') renderCollectionsBar();
+  }
+
+  function ownedBtnHtml(isOwned) {
+    return isOwned
+      ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Owned`
+      : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Mark as owned`;
   }
 
   // ── Modal ─────────────────────────────────────────────────────
@@ -987,6 +1154,8 @@
       </div>`;
     }).join('');
 
+    const isOwned = owned.has(card.id);
+
     inner.innerHTML = `
       <img class="modal-img" src="${card.images?.large || card.images?.small || ''}" alt="${card.name}" />
       <div class="modal-title">${card.name}</div>
@@ -1003,6 +1172,19 @@
         </div>
       </div>
       ${attacks ? `<div class="attacks-list"><h4>Attacks</h4>${attacks}</div>` : ''}
+      <button class="modal-owned-btn ${isOwned ? 'is-owned' : ''}" id="modal-owned-btn"
+              data-card-id="${card.id}"
+              onclick="toggleModalOwned('${card.id}')">
+        ${ownedBtnHtml(isOwned)}
+      </button>
+      <button class="modal-share-btn" id="modal-share-btn"
+              onclick="shareCard(${JSON.stringify(card).replace(/"/g,'&quot;')})">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Share card
+      </button>
       <div class="modal-add-section">
         <div class="modal-add-label">Add to collection</div>
         <div class="modal-col-list">${colRows}</div>
@@ -1021,6 +1203,23 @@
     openModal(card); // re-render modal state
   }
 
+  function toggleModalOwned(cardId) {
+    const btn = document.getElementById('modal-owned-btn');
+    if (owned.has(cardId)) {
+      owned.delete(cardId);
+      btn?.classList.remove('is-owned');
+      if (btn) btn.innerHTML = ownedBtnHtml(false);
+    } else {
+      owned.add(cardId);
+      btn?.classList.add('is-owned');
+      if (btn) btn.innerHTML = ownedBtnHtml(true);
+    }
+    saveOwned();
+    // Update any visible card in the grid
+    if (lastResults.length) renderResults(lastResults);
+    else if (currentTab === 'collection') renderCollectionGrid();
+  }
+
   function searchByArtist(artist) {
     closeModal();
     setSearchMode('artist');
@@ -1029,6 +1228,60 @@
     switchTab('search');
     fetchCards();
   }
+
+  // ── Share card ────────────────────────────────────────────────
+  async function shareCard(card) {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('card', card.id);
+    const shareUrl = url.toString();
+
+    // Use native share sheet on mobile (iOS Safari), clipboard on desktop
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${card.name} — PokéTCG`,
+          text: `Check out this Pokémon card: ${card.name} (${card.set?.name || ''})`,
+          url: shareUrl,
+        });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; // user cancelled — do nothing
+      }
+    }
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // Final fallback: prompt
+      prompt('Copy this link:', shareUrl);
+      return;
+    }
+    const btn = document.getElementById('modal-share-btn');
+    if (!btn) return;
+    const orig = btn.innerHTML;
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Link copied!`;
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
+  }
+
+  // ── Deep-link: open card from ?card=<id> on page load ─────────
+  async function checkDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const cardId = params.get('card');
+    if (!cardId) return;
+    // Clean URL without reloading
+    history.replaceState(null, '', window.location.pathname);
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (API_KEY) headers['X-Api-Key'] = API_KEY;
+      const res = await fetch(`${API}/cards/${encodeURIComponent(cardId)}`, { headers });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.data) openModal(data.data);
+    } catch {}
+  }
+  checkDeepLink();
 
   function closeModal() {
     document.getElementById('modal-overlay').classList.add('hidden');
@@ -1059,6 +1312,17 @@
 
   function saveStore() {
     localStorage.setItem('ptcg_store', JSON.stringify(store));
+  }
+
+  function loadOwned() {
+    try {
+      const raw = localStorage.getItem('ptcg_owned');
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  }
+
+  function saveOwned() {
+    localStorage.setItem('ptcg_owned', JSON.stringify([...owned]));
   }
 
   function updateCount() {

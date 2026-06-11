@@ -19,7 +19,6 @@
       --card-w:    180px;
       --theme-transition: background 0.25s, color 0.25s, border-color 0.25s;
     }
-
     html.light {
       --bg:      #f0f2f8;
       --surface: #ffffff;
@@ -29,6 +28,7 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { -webkit-tap-highlight-color: transparent; }
 
     body {
       background: var(--bg);
@@ -37,6 +37,7 @@
       font-size: 15px;
       min-height: 100dvh;
       transition: var(--theme-transition);
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     /* ── Header ───────────────────────────────────────────── */
@@ -44,6 +45,8 @@
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       padding: 0 20px;
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -65,8 +68,7 @@
     }
     .logo span { color: var(--accent2); }
     .logo img {
-      width: 36px;
-      height: 36px;
+      width: 36px; height: 36px;
       object-fit: contain;
       image-rendering: pixelated;
       filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
@@ -80,42 +82,29 @@
       padding: 3px;
     }
     .tab-bar button {
-      background: none;
-      border: none;
+      background: none; border: none;
       color: var(--muted);
       font-family: 'Exo 2', sans-serif;
-      font-weight: 600;
-      font-size: 0.8rem;
-      padding: 5px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
+      font-weight: 600; font-size: 0.8rem;
+      padding: 5px 12px; border-radius: 6px;
+      cursor: pointer; transition: all 0.15s;
       white-space: nowrap;
     }
-    .tab-bar button.active {
-      background: var(--surface);
-      color: var(--text);
-    }
+    .tab-bar button.active { background: var(--surface); color: var(--text); }
 
     .collection-count {
       font-family: 'Exo 2', sans-serif;
-      font-weight: 600;
-      font-size: 0.8rem;
+      font-weight: 600; font-size: 0.8rem;
       color: var(--muted);
     }
     .collection-count strong { color: var(--accent); }
 
-    /* ── Theme toggle ─────────────────────────────────────── */
     .theme-toggle {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 999px;
-      cursor: pointer;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border-radius: 999px; cursor: pointer;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
       font-size: 1rem;
       transition: border-color 0.15s, background 0.25s;
       flex-shrink: 0;
@@ -126,117 +115,148 @@
     main { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
 
     /* ── Search Mode Toggle ───────────────────────────────── */
-    .search-mode-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
+    .search-mode-row { display: flex; gap: 6px; margin-bottom: 10px; }
     .mode-btn {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--muted);
+      border-radius: 8px; color: var(--muted);
       font-family: 'Exo 2', sans-serif;
-      font-weight: 600;
-      font-size: 0.78rem;
-      padding: 5px 14px;
-      cursor: pointer;
-      transition: all 0.15s;
+      font-weight: 600; font-size: 0.78rem;
+      padding: 5px 14px; cursor: pointer; transition: all 0.15s;
     }
     .mode-btn.active {
-      border-color: var(--accent);
-      color: var(--accent);
+      border-color: var(--accent); color: var(--accent);
       background: rgba(245,197,24,0.08);
     }
 
     /* ── Search Bar ───────────────────────────────────────── */
-    .search-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
-    .search-wrap {
-      position: relative;
-      flex: 1;
-    }
+    .search-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .search-wrap { position: relative; flex: 1; }
     .search-wrap svg {
-      position: absolute;
-      left: 14px;
-      top: 50%;
+      position: absolute; left: 14px; top: 50%;
       transform: translateY(-50%);
-      color: var(--muted);
-      pointer-events: none;
+      color: var(--muted); pointer-events: none;
     }
     input[type="search"] {
-      width: 100%;
-      background: var(--surface);
+      width: 100%; background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-size: 0.95rem;
+      border-radius: var(--radius); color: var(--text);
+      font-size: 16px;
       padding: 12px 14px 12px 44px;
-      outline: none;
-      transition: border-color 0.15s;
+      outline: none; transition: border-color 0.15s;
       -webkit-appearance: none;
     }
     input[type="search"]:focus { border-color: var(--accent); }
     input[type="search"]::placeholder { color: var(--muted); }
 
     button.search-btn {
-      background: var(--accent);
-      border: none;
-      border-radius: var(--radius);
-      color: #000;
+      background: var(--accent); border: none;
+      border-radius: var(--radius); color: #000;
       font-family: 'Exo 2', sans-serif;
-      font-weight: 700;
-      font-size: 0.9rem;
-      padding: 0 20px;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      white-space: nowrap;
+      font-weight: 700; font-size: 0.9rem;
+      padding: 0 20px; cursor: pointer;
+      transition: opacity 0.15s; white-space: nowrap;
     }
     button.search-btn:hover { opacity: 0.88; }
     button.search-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* ── Filter chips ─────────────────────────────────────── */
     .filter-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
+      display: flex; gap: 8px;
+      flex-wrap: nowrap; overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; margin-bottom: 20px;
     }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-row > span { flex-shrink: 0; font-size: 0.78rem; color: var(--muted); align-self: center; }
     .chip {
+      flex-shrink: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; color: var(--muted);
+      font-size: 0.78rem; font-weight: 500;
+      padding: 5px 14px; cursor: pointer; transition: all 0.15s;
+    }
+    .chip.active { border-color: var(--accent); color: var(--accent); }
+    .chip:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+    /* ── Collections bar ──────────────────────────────────── */
+    .collections-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .collections-bar::-webkit-scrollbar { display: none; }
+
+    .col-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 999px;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 500;
-      padding: 5px 14px;
+      padding: 6px 14px;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.15s;
+      flex-shrink: 0;
     }
-    .chip.active {
+    .col-tab:hover { border-color: var(--muted); }
+    .col-tab.active {
+      background: var(--accent);
       border-color: var(--accent);
-      color: var(--accent);
+      color: #000;
     }
-    .chip:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+    .col-tab-name {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.82rem;
+    }
+    .col-tab-count {
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.15);
+      border-radius: 999px;
+      padding: 1px 7px;
+      font-weight: 600;
+    }
+    .col-tab.active .col-tab-count { background: rgba(0,0,0,0.2); }
+
+    .col-menu-btn {
+      background: none; border: none;
+      color: var(--muted); font-size: 1.1rem;
+      cursor: pointer; padding: 4px 6px;
+      border-radius: 6px; line-height: 1;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+    .col-menu-btn:hover { color: var(--text); }
+
+    .new-col-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.82rem;
+      padding: 6px 14px;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .new-col-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ── Section heading ──────────────────────────────────── */
     .section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 14px;
     }
     .section-head h2 {
       font-family: 'Exo 2', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      font-weight: 700; font-size: 1rem;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
     }
 
     /* ── Card Grid ────────────────────────────────────────── */
@@ -248,33 +268,28 @@
 
     /* ── Pokemon Card ─────────────────────────────────────── */
     .pcard {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
       cursor: pointer;
       transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
       position: relative;
     }
-    .pcard:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent);
-      box-shadow: 0 8px 32px rgba(245, 197, 24, 0.15);
+    @media (hover: hover) {
+      .pcard:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent);
+        box-shadow: 0 8px 32px rgba(245,197,24,0.15);
+      }
+      .pcard.in-collection:hover {
+        border-color: #3ddc84;
+        box-shadow: 0 8px 32px rgba(61,220,132,0.15);
+      }
     }
-    .pcard.in-collection {
-      border-color: #3ddc84;
-    }
-    .pcard.in-collection:hover {
-      border-color: #3ddc84;
-      box-shadow: 0 8px 32px rgba(61, 220, 132, 0.15);
-    }
+    .pcard.in-collection { border-color: #3ddc84; }
 
     .pcard-img {
-      width: 100%;
-      aspect-ratio: 63 / 88;
-      object-fit: cover;
-      display: block;
-      background: var(--bg);
+      width: 100%; aspect-ratio: 63/88;
+      object-fit: cover; display: block; background: var(--bg);
     }
     .pcard-img.loading {
       background: linear-gradient(120deg, var(--bg) 30%, var(--border) 50%, var(--bg) 70%);
@@ -286,89 +301,52 @@
       100% { background-position: -200% 0; }
     }
 
-    .pcard-body {
-      padding: 10px 12px;
-    }
+    .pcard-body { padding: 10px 12px; }
     .pcard-name {
       font-family: 'Exo 2', sans-serif;
-      font-weight: 700;
-      font-size: 0.88rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 3px;
+      font-weight: 700; font-size: 0.88rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
     }
     .pcard-set {
-      font-size: 0.72rem;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 0.72rem; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
     .pcard-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-top: 1px solid var(--border);
     }
     .rarity-badge {
-      font-size: 0.68rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-size: 0.68rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
     }
     .collect-btn {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 3px 9px;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--muted);
+      font-size: 0.72rem; font-weight: 600;
+      padding: 6px 10px; min-height: 32px;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
     }
-    .collect-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    .collect-btn:hover { border-color: var(--accent); color: var(--accent); }
     .collect-btn.collected {
-      background: rgba(61, 220, 132, 0.12);
-      border-color: #3ddc84;
-      color: #3ddc84;
+      background: rgba(61,220,132,0.12);
+      border-color: #3ddc84; color: #3ddc84;
     }
 
     .in-collection-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 22px;
-      height: 22px;
-      background: #3ddc84;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
+      position: absolute; top: 8px; right: 8px;
+      width: 22px; height: 22px; background: #3ddc84;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 11px;
     }
 
     /* ── Empty / loading states ───────────────────────────── */
-    .state-msg {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
-    }
+    .state-msg { text-align: center; padding: 60px 20px; color: var(--muted); }
     .state-msg .big { font-size: 3rem; margin-bottom: 12px; }
     .state-msg h3 {
       font-family: 'Exo 2', sans-serif;
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--text);
-      margin-bottom: 6px;
+      font-weight: 700; font-size: 1.1rem;
+      color: var(--text); margin-bottom: 6px;
     }
 
     .spinner {
@@ -383,28 +361,18 @@
 
     /* ── Pagination ───────────────────────────────────────── */
     .pagination {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      align-items: center;
-      margin-top: 32px;
+      display: flex; gap: 8px;
+      justify-content: center; align-items: center; margin-top: 32px;
     }
+    .pagination.hidden { display: none; }
     .pagination button {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
       font-family: 'Exo 2', sans-serif;
-      font-weight: 600;
-      font-size: 0.85rem;
-      padding: 8px 16px;
-      cursor: pointer;
-      transition: all 0.15s;
+      font-weight: 600; font-size: 0.85rem;
+      padding: 10px 18px; cursor: pointer; transition: all 0.15s;
     }
-    .pagination button:hover:not(:disabled) {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    .pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
     .pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
     .pagination .page-info { color: var(--muted); font-size: 0.85rem; }
 
@@ -412,213 +380,155 @@
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      padding: 20px;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; padding: 20px;
       backdrop-filter: blur(4px);
     }
     .modal-overlay.hidden { display: none; }
 
     .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 560px;
-      max-height: 90dvh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; width: 100%; max-width: 560px;
+      max-height: 90dvh; overflow-y: auto;
+      display: flex; flex-direction: column;
     }
     .modal-close {
-      position: sticky;
-      top: 0;
-      display: flex;
-      justify-content: flex-end;
+      position: sticky; top: 0;
+      display: flex; justify-content: flex-end;
       padding: 14px 16px 0;
-      background: var(--surface);
-      z-index: 1;
+      background: var(--surface); z-index: 1;
     }
     .modal-close button {
-      background: var(--border);
-      border: none;
-      color: var(--text);
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 1rem;
+      background: var(--border); border: none; color: var(--text);
+      width: 40px; height: 40px; border-radius: 50%;
+      cursor: pointer; font-size: 1rem;
       display: flex; align-items: center; justify-content: center;
     }
     .modal-inner {
       padding: 16px 20px 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 16px;
     }
     .modal-img {
-      width: 220px;
-      border-radius: 10px;
+      width: 220px; border-radius: 10px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.5);
     }
     .modal-title {
       font-family: 'Exo 2', sans-serif;
-      font-weight: 800;
-      font-size: 1.5rem;
-      text-align: center;
+      font-weight: 800; font-size: 1.5rem; text-align: center;
     }
     .modal-meta {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; width: 100%;
     }
-    .meta-item {
-      background: var(--bg);
-      border-radius: 10px;
+    .meta-item { background: var(--bg); border-radius: 10px; padding: 10px 14px; }
+    .meta-label {
+      font-size: 0.7rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px;
+    }
+    .meta-value { font-family: 'Exo 2', sans-serif; font-weight: 600; font-size: 0.9rem; }
+
+    /* ── Add-to-collection section in modal ───────────────── */
+    .modal-add-section { width: 100%; }
+    .modal-add-label {
+      font-size: 0.72rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-bottom: 10px;
+      font-family: 'Exo 2', sans-serif; font-weight: 700;
+    }
+    .modal-col-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .modal-col-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border-radius: 10px;
       padding: 10px 14px;
     }
-    .meta-label {
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 3px;
-    }
-    .meta-value {
+    .modal-col-row-name {
       font-family: 'Exo 2', sans-serif;
-      font-weight: 600;
-      font-size: 0.9rem;
+      font-weight: 600; font-size: 0.9rem;
     }
-    .modal-collect-btn {
-      background: var(--accent);
-      border: none;
-      border-radius: var(--radius);
-      color: #000;
+    .modal-col-row-count {
+      font-size: 0.75rem; color: var(--muted); margin-top: 2px;
+    }
+    .modal-add-btn {
+      background: var(--accent); border: none;
+      border-radius: 8px; color: #000;
       font-family: 'Exo 2', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 14px 32px;
-      cursor: pointer;
-      width: 100%;
-      transition: opacity 0.15s;
+      font-weight: 700; font-size: 0.82rem;
+      padding: 7px 14px; cursor: pointer;
+      transition: opacity 0.15s; white-space: nowrap;
     }
-    .modal-collect-btn:hover { opacity: 0.88; }
-    .modal-collect-btn.collected {
+    .modal-add-btn:hover { opacity: 0.85; }
+    .modal-add-btn.in-col {
       background: rgba(61,220,132,0.15);
       color: #3ddc84;
     }
+
     .attacks-list { width: 100%; }
     .attacks-list h4 {
       font-family: 'Exo 2', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 8px;
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 8px;
     }
     .attack-item {
-      background: var(--bg);
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-bottom: 8px;
+      background: var(--bg); border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 8px;
     }
     .attack-name {
       font-family: 'Exo 2', sans-serif;
-      font-weight: 700;
-      font-size: 0.88rem;
-      display: flex;
-      justify-content: space-between;
+      font-weight: 700; font-size: 0.88rem;
+      display: flex; justify-content: space-between;
     }
     .attack-damage { color: var(--accent2); }
     .attack-text { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
 
-    /* ── Mobile / Safari fixes ────────────────────────────── */
-
-    /* Remove tap highlight flash on iOS */
-    * { -webkit-tap-highlight-color: transparent; }
-
-    /* Prevent input zoom on iOS (font-size must be ≥16px on focus) */
-    input[type="search"] { font-size: 16px; }
-
-    /* Disable hover card lift on touch devices */
-    @media (hover: none) {
-      .pcard:hover {
-        transform: none;
-        border-color: var(--border);
-        box-shadow: none;
-      }
-      .pcard.in-collection:hover {
-        border-color: #3ddc84;
-        box-shadow: none;
-      }
+    /* ── Inline name/rename input ─────────────────────────── */
+    .inline-input {
+      background: var(--bg); border: 1px solid var(--accent);
+      border-radius: 8px; color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.82rem;
+      padding: 5px 10px; outline: none;
+      width: 130px;
     }
 
-    /* Safe area padding for iPhone notch / home bar */
-    body {
-      padding-bottom: env(safe-area-inset-bottom);
+    /* ── Context menu (rename/delete) ─────────────────────── */
+    .ctx-menu {
+      position: fixed;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 6px;
+      z-index: 300; min-width: 140px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
     }
-    header {
-      padding-left: max(20px, env(safe-area-inset-left));
-      padding-right: max(20px, env(safe-area-inset-right));
+    .ctx-menu button {
+      display: flex; align-items: center; gap: 8px;
+      background: none; border: none;
+      color: var(--text); font-size: 0.85rem;
+      padding: 8px 12px; width: 100%;
+      text-align: left; border-radius: 6px;
+      cursor: pointer; transition: background 0.1s;
     }
+    .ctx-menu button:hover { background: var(--border); }
+    .ctx-menu button.danger { color: var(--accent2); }
 
-    /* Type chips: horizontal scroll instead of wrapping */
-    .filter-row {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding-bottom: 4px;
-    }
-    .filter-row::-webkit-scrollbar { display: none; }
-    .filter-row > span { flex-shrink: 0; }
-    .chip { flex-shrink: 0; }
-
-    /* Bigger tap targets for collect button and close button */
-    .collect-btn {
-      min-height: 32px;
-      padding: 6px 10px;
-    }
-    .modal-close button {
-      width: 40px;
-      height: 40px;
-    }
-
-    /* ── Narrow screen (≤480px) ───────────────────────────── */
+    /* ── Mobile ───────────────────────────────────────────── */
     @media (max-width: 480px) {
       :root { --card-w: 148px; }
-
-      /* Tighter header — hide count text, keep icon */
       .collection-count { display: none; }
       .logo { font-size: 1rem; }
       .logo img { width: 30px; height: 30px; }
-
-      /* Stack search button below input on very narrow screens */
       .search-row { flex-wrap: wrap; }
       .search-wrap { flex: 1 1 100%; }
       button.search-btn { flex: 1 1 100%; padding: 12px; }
-
-      /* Modal as bottom sheet on mobile */
-      .modal-overlay {
-        align-items: flex-end;
-        padding: 0;
-      }
+      .modal-overlay { align-items: flex-end; padding: 0; }
       .modal {
         border-radius: 20px 20px 0 0;
-        max-height: 92dvh;
-        width: 100%;
+        max-height: 92dvh; width: 100%;
         padding-bottom: env(safe-area-inset-bottom);
       }
-
-      /* Slightly smaller card image in modal */
       .modal-img { width: 180px; }
-
-      /* Larger pagination buttons for thumbs */
-      .pagination button { padding: 10px 18px; }
     }
   </style>
 </head>
@@ -634,22 +544,18 @@
     <button onclick="switchTab('collection')">Collection</button>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
-    <div class="collection-count">
-      <strong id="col-count">0</strong> cards
-    </div>
+    <div class="collection-count"><strong id="col-count">0</strong> cards</div>
     <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
   </div>
 </header>
 
 <main>
-
   <!-- Search tab -->
   <div id="tab-search">
     <div class="search-mode-row">
       <button class="mode-btn active" id="mode-name" onclick="setSearchMode('name')">By Name</button>
       <button class="mode-btn" id="mode-artist" onclick="setSearchMode('artist')">By Artist</button>
     </div>
-
     <div class="search-row">
       <div class="search-wrap">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -661,13 +567,10 @@
       </div>
       <button class="search-btn" id="search-btn" onclick="doSearch()">Search</button>
     </div>
-
     <div class="filter-row" id="type-filters">
-      <span style="font-size:0.78rem;color:var(--muted);align-self:center">Type:</span>
+      <span>Type:</span>
     </div>
-
     <div id="search-results"></div>
-
     <div class="pagination hidden" id="pagination">
       <button id="prev-btn" onclick="changePage(-1)">← Prev</button>
       <span class="page-info" id="page-info"></span>
@@ -677,12 +580,9 @@
 
   <!-- Collection tab -->
   <div id="tab-collection" style="display:none">
-    <div class="section-head">
-      <h2>My Collection</h2>
-    </div>
+    <div class="collections-bar" id="collections-bar"></div>
     <div id="collection-grid"></div>
   </div>
-
 </main>
 
 <!-- Card detail modal -->
@@ -693,44 +593,50 @@
   </div>
 </div>
 
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu" style="display:none"></div>
+
 <script>
-  // ── Config ─────────────────────────────────────────────────
-  const API = 'https://api.pokemontcg.io/v2';
-  // Optional: paste your free API key from pokemontcg.io for higher rate limits
-  const API_KEY = '';
+  // ── Config ──────────────────────────────────────────────────
+  const API      = 'https://api.pokemontcg.io/v2';
+  const API_KEY  = '';
   const PAGE_SIZE = 20;
 
-  // ── State ───────────────────────────────────────────────────
-  let currentTab    = 'search';
-  let currentQuery  = '';
-  let currentType   = '';
-  let currentPage   = 1;
-  let totalCards    = 0;
-  let searchMode    = 'name';   // 'name' | 'artist'
-  let collection    = loadCollection();
-  let lastResults   = [];
+  // ── Collections state ────────────────────────────────────────
+  // Structure: { collections: [{id, name, cards: {cardId: card}}], activeId }
+  let store      = loadStore();
+  let activeColId = store.activeId;
+
+  function activeCol() { return store.collections.find(c => c.id === activeColId); }
+  function activeCards() { return activeCol()?.cards || {}; }
+
+  // ── Search state ─────────────────────────────────────────────
+  let currentTab   = 'search';
+  let currentQuery = '';
+  let currentType  = '';
+  let currentPage  = 1;
+  let totalCards   = 0;
+  let searchMode   = 'name';
+  let lastResults  = [];
 
   const TYPES = ['Colorless','Darkness','Dragon','Fairy','Fighting','Fire',
                  'Grass','Lightning','Metal','Psychic','Water'];
 
-  // ── Theme ────────────────────────────────────────────────────
-  function applyTheme(theme) {
-    document.documentElement.classList.toggle('light', theme === 'light');
-    document.getElementById('theme-toggle').textContent = theme === 'light' ? '🌙' : '☀️';
+  // ── Theme ─────────────────────────────────────────────────────
+  function applyTheme(t) {
+    document.documentElement.classList.toggle('light', t === 'light');
+    document.getElementById('theme-toggle').textContent = t === 'light' ? '🌙' : '☀️';
   }
-
   function toggleTheme() {
     const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
     localStorage.setItem('ptcg_theme', next);
     applyTheme(next);
   }
-
-  // Apply saved theme (or system preference) on load
   const savedTheme = localStorage.getItem('ptcg_theme') ||
     (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   applyTheme(savedTheme);
 
-  // ── Init ────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────
   renderTypeFilters();
   updateCount();
   showSearchState('idle');
@@ -748,17 +654,15 @@
 
   function toggleType(t, chip) {
     if (currentType === t) {
-      currentType = '';
-      chip.classList.remove('active');
+      currentType = ''; chip.classList.remove('active');
     } else {
       document.querySelectorAll('#type-filters .chip').forEach(c => c.classList.remove('active'));
-      currentType = t;
-      chip.classList.add('active');
+      currentType = t; chip.classList.add('active');
     }
     if (currentQuery) { currentPage = 1; doSearch(); }
   }
 
-  // ── Tab switching ───────────────────────────────────────────
+  // ── Tab switching ─────────────────────────────────────────────
   function switchTab(tab) {
     currentTab = tab;
     document.getElementById('tab-search').style.display     = tab === 'search'     ? '' : 'none';
@@ -766,32 +670,28 @@
     document.querySelectorAll('.tab-bar button').forEach((b, i) => {
       b.classList.toggle('active', (i === 0 && tab === 'search') || (i === 1 && tab === 'collection'));
     });
-    if (tab === 'collection') renderCollection();
+    if (tab === 'collection') renderCollectionTab();
   }
 
+  // ── Search ────────────────────────────────────────────────────
   function setSearchMode(mode) {
     searchMode = mode;
     document.getElementById('mode-name').classList.toggle('active', mode === 'name');
     document.getElementById('mode-artist').classList.toggle('active', mode === 'artist');
-    // Update placeholder and hide type filters in artist mode
     document.getElementById('search-input').placeholder =
       mode === 'name' ? 'Search by Pokémon name…' : 'Search by artist name…';
     document.getElementById('type-filters').style.display = mode === 'artist' ? 'none' : '';
-    // Clear results when switching mode
-    currentQuery = '';
-    lastResults = [];
+    currentQuery = ''; lastResults = [];
     showSearchState('idle');
     document.getElementById('pagination').classList.add('hidden');
   }
 
-  // ── Search ──────────────────────────────────────────────────
   async function doSearch() {
     const input = document.getElementById('search-input');
     const q = input.value.trim();
     if (!q) return;
-    input.blur(); // dismiss keyboard on mobile
-    currentQuery = q;
-    currentPage = 1;
+    input.blur();
+    currentQuery = q; currentPage = 1;
     await fetchCards();
   }
 
@@ -811,18 +711,12 @@
       : `name:${currentQuery}*`;
     if (searchMode === 'name' && currentType) query += ` types:${currentType}`;
 
-    const params = new URLSearchParams({
-      q: query,
-      page: currentPage,
-      pageSize: PAGE_SIZE,
-      orderBy: 'name'
-    });
-
+    const params = new URLSearchParams({ q: query, page: currentPage, pageSize: PAGE_SIZE, orderBy: 'name' });
     const headers = { 'Content-Type': 'application/json' };
     if (API_KEY) headers['X-Api-Key'] = API_KEY;
 
     try {
-      const res = await fetch(`${API}/cards?${params}`, { headers });
+      const res  = await fetch(`${API}/cards?${params}`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       totalCards  = data.totalCount || 0;
@@ -840,28 +734,18 @@
     const el = document.getElementById('search-results');
     document.getElementById('pagination').classList.toggle('hidden', state !== 'results');
     if (state === 'idle') {
-      el.innerHTML = `
-        <div class="state-msg">
-          <div class="big">🃏</div>
-          <h3>Search for any Pokémon card</h3>
-          <p>Search by name (e.g. "Charizard") or switch to search by artist</p>
-        </div>`;
+      el.innerHTML = `<div class="state-msg"><div class="big">🃏</div>
+        <h3>Search for any Pokémon card</h3>
+        <p>Search by name (e.g. "Charizard") or switch to search by artist</p></div>`;
     } else if (state === 'loading') {
       el.innerHTML = '<div class="spinner"></div>';
     } else if (state === 'error') {
-      el.innerHTML = `
-        <div class="state-msg">
-          <div class="big">⚠️</div>
-          <h3>Something went wrong</h3>
-          <p>${msg || 'Check your connection and try again.'}</p>
-        </div>`;
+      el.innerHTML = `<div class="state-msg"><div class="big">⚠️</div>
+        <h3>Something went wrong</h3><p>${msg || 'Check your connection and try again.'}</p></div>`;
     } else if (state === 'empty') {
-      el.innerHTML = `
-        <div class="state-msg">
-          <div class="big">🔍</div>
-          <h3>No cards found</h3>
-          <p>${searchMode === 'artist' ? 'Try a different artist name.' : 'Try a different name or remove the type filter.'}</p>
-        </div>`;
+      el.innerHTML = `<div class="state-msg"><div class="big">🔍</div>
+        <h3>No cards found</h3>
+        <p>${searchMode === 'artist' ? 'Try a different artist name.' : 'Try a different name or remove the type filter.'}</p></div>`;
     }
   }
 
@@ -883,17 +767,59 @@
     document.getElementById('next-btn').disabled = currentPage >= totalPages;
   }
 
-  // ── Collection ──────────────────────────────────────────────
-  function renderCollection() {
+  // ── Collections tab ───────────────────────────────────────────
+  function renderCollectionTab() {
+    renderCollectionsBar();
+    renderCollectionGrid();
+  }
+
+  function renderCollectionsBar() {
+    const bar = document.getElementById('collections-bar');
+    bar.innerHTML = '';
+
+    store.collections.forEach(col => {
+      const tab = document.createElement('div');
+      tab.className = 'col-tab' + (col.id === activeColId ? ' active' : '');
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'col-tab-name';
+      nameSpan.textContent = col.name;
+
+      const countSpan = document.createElement('span');
+      countSpan.className = 'col-tab-count';
+      countSpan.textContent = Object.keys(col.cards).length;
+
+      tab.appendChild(nameSpan);
+      tab.appendChild(countSpan);
+      tab.onclick = () => { activeColId = col.id; store.activeId = col.id; saveStore(); renderCollectionTab(); };
+
+      // ⋯ menu button
+      const menuBtn = document.createElement('button');
+      menuBtn.className = 'col-menu-btn';
+      menuBtn.textContent = '⋯';
+      menuBtn.onclick = e => { e.stopPropagation(); showColMenu(e, col); };
+      tab.appendChild(menuBtn);
+
+      bar.appendChild(tab);
+    });
+
+    // New collection button
+    const newBtn = document.createElement('button');
+    newBtn.className = 'new-col-btn';
+    newBtn.innerHTML = '＋ New list';
+    newBtn.onclick = () => createCollection();
+    bar.appendChild(newBtn);
+  }
+
+  function renderCollectionGrid() {
     const el = document.getElementById('collection-grid');
-    const cards = Object.values(collection);
+    const col = activeCol();
+    if (!col) { el.innerHTML = ''; return; }
+    const cards = Object.values(col.cards);
     if (!cards.length) {
-      el.innerHTML = `
-        <div class="state-msg">
-          <div class="big">📦</div>
-          <h3>Your collection is empty</h3>
-          <p>Search for cards and tap <em>+ Add</em> to collect them.</p>
-        </div>`;
+      el.innerHTML = `<div class="state-msg"><div class="big">📦</div>
+        <h3>"${col.name}" is empty</h3>
+        <p>Search for cards and tap <em>+ Add</em> to add them here.</p></div>`;
       return;
     }
     el.innerHTML = '';
@@ -903,9 +829,80 @@
     el.appendChild(grid);
   }
 
-  // ── Card DOM ────────────────────────────────────────────────
+  // ── Collection management ─────────────────────────────────────
+  function createCollection() {
+    const name = prompt('Name your new collection:')?.trim();
+    if (!name) return;
+    const id = 'col_' + Date.now();
+    store.collections.push({ id, name, cards: {} });
+    activeColId = id;
+    store.activeId = id;
+    saveStore();
+    updateCount();
+    renderCollectionTab();
+  }
+
+  function renameCollection(col) {
+    const name = prompt('Rename collection:', col.name)?.trim();
+    if (!name) return;
+    col.name = name;
+    saveStore();
+    renderCollectionTab();
+  }
+
+  function deleteCollection(col) {
+    if (store.collections.length === 1) {
+      alert('You need at least one collection.');
+      return;
+    }
+    if (!confirm(`Delete "${col.name}" and all its cards?`)) return;
+    store.collections = store.collections.filter(c => c.id !== col.id);
+    if (activeColId === col.id) {
+      activeColId = store.collections[0].id;
+      store.activeId = activeColId;
+    }
+    saveStore();
+    updateCount();
+    renderCollectionTab();
+  }
+
+  function showColMenu(e, col) {
+    const menu = document.getElementById('ctx-menu');
+    menu.innerHTML = '';
+
+    const renameBtn = document.createElement('button');
+    renameBtn.innerHTML = '✏️ Rename';
+    renameBtn.onclick = () => { hideCtxMenu(); renameCollection(col); };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'danger';
+    deleteBtn.innerHTML = '🗑 Delete';
+    deleteBtn.onclick = () => { hideCtxMenu(); deleteCollection(col); };
+
+    menu.appendChild(renameBtn);
+    menu.appendChild(deleteBtn);
+
+    // Position near the button
+    const rect = e.target.getBoundingClientRect();
+    menu.style.display = 'block';
+    const menuW = 150, menuH = 80;
+    let top  = rect.bottom + 6;
+    let left = rect.left - menuW + rect.width;
+    if (left < 8) left = 8;
+    if (top + menuH > window.innerHeight - 8) top = rect.top - menuH - 6;
+    menu.style.top  = top  + 'px';
+    menu.style.left = left + 'px';
+
+    setTimeout(() => document.addEventListener('click', hideCtxMenu, { once: true }), 0);
+  }
+
+  function hideCtxMenu() {
+    document.getElementById('ctx-menu').style.display = 'none';
+  }
+
+  // ── Card DOM ──────────────────────────────────────────────────
   function buildCard(card) {
-    const inCol = !!collection[card.id];
+    const inCol = !!activeCards()[card.id];
     const wrap = document.createElement('div');
     wrap.className = 'pcard' + (inCol ? ' in-collection' : '');
     wrap.onclick = () => openModal(card);
@@ -919,8 +916,7 @@
 
     const img = document.createElement('img');
     img.className = 'pcard-img loading';
-    img.alt = card.name;
-    img.loading = 'lazy';
+    img.alt = card.name; img.loading = 'lazy';
     img.onload  = () => img.classList.remove('loading');
     img.onerror = () => { img.classList.remove('loading'); img.style.opacity = '0.3'; };
     img.src = card.images?.small || '';
@@ -928,8 +924,7 @@
 
     const body = document.createElement('div');
     body.className = 'pcard-body';
-    body.innerHTML = `
-      <div class="pcard-name">${card.name}</div>
+    body.innerHTML = `<div class="pcard-name">${card.name}</div>
       <div class="pcard-set">${card.set?.name || '—'}</div>`;
     wrap.appendChild(body);
 
@@ -943,113 +938,102 @@
     btn.onclick = e => { e.stopPropagation(); toggleCollect(card, btn, wrap); };
     footer.appendChild(btn);
     wrap.appendChild(footer);
-
     return wrap;
   }
 
   function toggleCollect(card, btn, wrap) {
-    if (collection[card.id]) {
-      delete collection[card.id];
-      btn.textContent = '+ Add';
-      btn.classList.remove('collected');
+    const col = activeCol();
+    if (!col) return;
+    if (col.cards[card.id]) {
+      delete col.cards[card.id];
+      btn.textContent = '+ Add'; btn.classList.remove('collected');
       wrap.classList.remove('in-collection');
       wrap.querySelector('.in-collection-badge')?.remove();
     } else {
-      collection[card.id] = card;
-      btn.textContent = '✓ Added';
-      btn.classList.add('collected');
+      col.cards[card.id] = card;
+      btn.textContent = '✓ Added'; btn.classList.add('collected');
       wrap.classList.add('in-collection');
       if (!wrap.querySelector('.in-collection-badge')) {
         const badge = document.createElement('div');
-        badge.className = 'in-collection-badge';
-        badge.textContent = '✓';
+        badge.className = 'in-collection-badge'; badge.textContent = '✓';
         wrap.prepend(badge);
       }
     }
-    saveCollection();
-    updateCount();
+    saveStore(); updateCount();
+    if (currentTab === 'collection') renderCollectionsBar();
   }
 
-  // ── Modal ───────────────────────────────────────────────────
+  // ── Modal ─────────────────────────────────────────────────────
   function openModal(card) {
-    const inCol = !!collection[card.id];
     const inner = document.getElementById('modal-inner');
-
     const attacks = (card.attacks || []).map(a => `
       <div class="attack-item">
-        <div class="attack-name">
-          <span>${a.name}</span>
-          <span class="attack-damage">${a.damage || ''}</span>
-        </div>
+        <div class="attack-name"><span>${a.name}</span><span class="attack-damage">${a.damage || ''}</span></div>
         ${a.text ? `<div class="attack-text">${a.text}</div>` : ''}
       </div>`).join('');
+
+    // Build per-collection add rows
+    const colRows = store.collections.map(col => {
+      const inThis = !!col.cards[card.id];
+      return `<div class="modal-col-row">
+        <div>
+          <div class="modal-col-row-name">${col.name}</div>
+          <div class="modal-col-row-count">${Object.keys(col.cards).length} card${Object.keys(col.cards).length !== 1 ? 's' : ''}</div>
+        </div>
+        <button class="modal-add-btn ${inThis ? 'in-col' : ''}"
+                onclick="toggleModalCollect(${JSON.stringify(card).replace(/"/g,'&quot;')}, '${col.id}')">
+          ${inThis ? '✓ Added' : '+ Add'}
+        </button>
+      </div>`;
+    }).join('');
 
     inner.innerHTML = `
       <img class="modal-img" src="${card.images?.large || card.images?.small || ''}" alt="${card.name}" />
       <div class="modal-title">${card.name}</div>
       <div class="modal-meta">
-        <div class="meta-item">
-          <div class="meta-label">Set</div>
-          <div class="meta-value">${card.set?.name || '—'}</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Rarity</div>
-          <div class="meta-value">${card.rarity || '—'}</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">HP</div>
-          <div class="meta-value">${card.hp || '—'}</div>
-        </div>
+        <div class="meta-item"><div class="meta-label">Set</div><div class="meta-value">${card.set?.name || '—'}</div></div>
+        <div class="meta-item"><div class="meta-label">Rarity</div><div class="meta-value">${card.rarity || '—'}</div></div>
+        <div class="meta-item"><div class="meta-label">HP</div><div class="meta-value">${card.hp || '—'}</div></div>
         <div class="meta-item">
           <div class="meta-label">Artist</div>
-          <div class="meta-value">
-            ${card.artist
-              ? `<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:var(--accent)"
-                       onclick="searchByArtist('${card.artist.replace(/'/g, "\\'")}')"
-                       title="Search all cards by this artist">${card.artist}</span>`
-              : '—'}
-          </div>
+          <div class="meta-value">${card.artist
+            ? `<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:var(--accent)"
+                     onclick="searchByArtist('${card.artist.replace(/'/g,"\\'")}')">${card.artist}</span>`
+            : '—'}</div>
         </div>
       </div>
       ${attacks ? `<div class="attacks-list"><h4>Attacks</h4>${attacks}</div>` : ''}
-      <button class="modal-collect-btn ${inCol ? 'collected' : ''}" id="modal-collect-btn"
-              onclick="toggleCollectModal(${JSON.stringify(card).replace(/"/g, '&quot;')})">
-        ${inCol ? '✓ In your collection' : '+ Add to collection'}
-      </button>`;
+      <div class="modal-add-section">
+        <div class="modal-add-label">Add to collection</div>
+        <div class="modal-col-list">${colRows}</div>
+      </div>`;
 
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
   }
 
-  function toggleCollectModal(card) {
-    if (collection[card.id]) {
-      delete collection[card.id];
-    } else {
-      collection[card.id] = card;
-    }
-    saveCollection();
-    updateCount();
-    openModal(card); // re-render modal
-    // refresh grid cards
-    document.querySelectorAll('.pcard').forEach(el => {
-      // we can't easily map DOM → card here; just re-render after close
-    });
+  function toggleModalCollect(card, colId) {
+    const col = store.collections.find(c => c.id === colId);
+    if (!col) return;
+    if (col.cards[card.id]) { delete col.cards[card.id]; }
+    else { col.cards[card.id] = card; }
+    saveStore(); updateCount();
+    openModal(card); // re-render modal state
   }
 
   function searchByArtist(artist) {
     closeModal();
     setSearchMode('artist');
     document.getElementById('search-input').value = artist;
-    currentQuery = artist;
-    currentPage = 1;
+    currentQuery = artist; currentPage = 1;
+    switchTab('search');
     fetchCards();
   }
 
   function closeModal() {
     document.getElementById('modal-overlay').classList.add('hidden');
     document.body.style.overflow = '';
-    // Refresh visible grids
-    if (currentTab === 'collection') renderCollection();
+    if (currentTab === 'collection') renderCollectionTab();
     else if (lastResults.length) renderResults(lastResults);
   }
 
@@ -1057,18 +1041,29 @@
     if (e.target === document.getElementById('modal-overlay')) closeModal();
   }
 
-  // ── Persistence ─────────────────────────────────────────────
-  function loadCollection() {
-    try { return JSON.parse(localStorage.getItem('ptcg_collection') || '{}'); }
-    catch { return {}; }
+  // ── Persistence ───────────────────────────────────────────────
+  function loadStore() {
+    try {
+      const raw = localStorage.getItem('ptcg_store');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    // Migrate old single-collection data
+    try {
+      const old = JSON.parse(localStorage.getItem('ptcg_collection') || '{}');
+      const id = 'col_default';
+      return { collections: [{ id, name: 'My Collection', cards: old }], activeId: id };
+    } catch {}
+    const id = 'col_default';
+    return { collections: [{ id, name: 'My Collection', cards: {} }], activeId: id };
   }
 
-  function saveCollection() {
-    localStorage.setItem('ptcg_collection', JSON.stringify(collection));
+  function saveStore() {
+    localStorage.setItem('ptcg_store', JSON.stringify(store));
   }
 
   function updateCount() {
-    document.getElementById('col-count').textContent = Object.keys(collection).length;
+    const total = store.collections.reduce((n, c) => n + Object.keys(c.cards).length, 0);
+    document.getElementById('col-count').textContent = total;
   }
 </script>
 </body>

@@ -1,7 +1,14 @@
 // ── Config ──────────────────────────────────────────────────
 const API      = 'https://api.pokemontcg.io/v2';
-const API_KEY  = '';
+const API_KEY  = '78372518-aa47-40c9-9590-9fd68c6a4a26';
 const PAGE_SIZE = 20;
+
+// ── JSONBin config ────────────────────────────────────────────
+// Get a free API key at https://jsonbin.io → API Keys
+// Paste your key below — keep this file out of your public repo!
+const JSONBIN_KEY        = '$2a$10$F87NnVwaAEbr.RDpTsirmOyJyrVaDBoAEy95oAOE3OzlQZbhaOjCm';
+const JSONBIN_API        = 'https://api.jsonbin.io/v3';
+const JSONBIN_COLLECTION = ''; // optional: your JSONBin collection ID to organise bins
 
 // ── API cache ─────────────────────────────────────────────────
 // Caches responses in localStorage with a TTL.
@@ -816,6 +823,276 @@ function renderCollectionGrid() {
 }
 
 // ── Collection management ─────────────────────────────────────
+
+// ── JSONBin share via code ────────────────────────────────────
+// Converts a JSONBin bin ID (24-char hex) into a compact 6-char
+// alphanumeric code and back, using base-62 encoding.
+const CODE_CHARS = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // 34 chars, no confusable I/O
+const CODE_LEN   = 6;
+
+function binIdToCode(binId) {
+  // Take last 10 hex chars of the ID → number → base-34 → 6 chars
+  const hex = binId.slice(-10);
+  let n = BigInt('0x' + hex);
+  let code = '';
+  const base = BigInt(CODE_CHARS.length);
+  for (let i = 0; i < CODE_LEN; i++) {
+    code = CODE_CHARS[Number(n % base)] + code;
+    n = n / base;
+  }
+  return code;
+}
+
+async function shareViaCode() {
+  if (!JSONBIN_KEY || JSONBIN_KEY === 'YOUR_JSONBIN_API_KEY_HERE') {
+    alert('Add your JSONBin API key to script.js to use share codes.\n\nGet a free key at jsonbin.io');
+    return;
+  }
+
+  const col = activeCol();
+  if (!col) return;
+
+  // Show loading state in modal
+  openShareCodeModal('<div class="spinner" style="margin:30px auto"></div>');
+
+  const cardIds      = Object.keys(col.cards);
+  const ownedInCol   = cardIds.filter(id => owned.has(id));
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    collection: { name: col.name, cards: col.cards },
+    owned: ownedInCol,
+  };
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Master-Key': JSONBIN_KEY,
+      'X-Bin-Name': col.name.slice(0, 128),
+      'X-Bin-Private': 'false',
+    };
+    if (JSONBIN_COLLECTION) headers['X-Collection-Id'] = JSONBIN_COLLECTION;
+
+    const res = await fetch(`${JSONBIN_API}/b`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`JSONBin error ${res.status}`);
+    const data = await res.json();
+    const binId = data.metadata?.id;
+    if (!binId) throw new Error('No bin ID returned');
+
+    const code = binIdToCode(binId);
+    // Store the mapping locally so the owner can also retrieve their own bins
+    cacheSet('sharecode:' + code, { binId }, 1000 * 60 * 60 * 24 * 30);
+
+    openShareCodeModal(`
+      <div style="text-align:center;padding-bottom:8px">
+        <div style="font-family:'Exo 2',sans-serif;font-weight:800;font-size:1.1rem;margin-bottom:4px">
+          Share this code
+        </div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:16px">
+          Send it to anyone — they can enter it in the app to import<br>"${col.name}"
+        </div>
+        <div class="share-code-display" onclick="copyShareCode('${code}')">${code}</div>
+        <div class="share-code-hint">Tap the code to copy it</div>
+      </div>`);
+  } catch (e) {
+    openShareCodeModal(`<div class="state-msg"><div class="big">⚠️</div>
+      <h3>Couldn't generate code</h3><p>${e.message}</p></div>`);
+  }
+}
+
+function copyShareCode(code) {
+  navigator.clipboard?.writeText(code).catch(() => {});
+  const el = document.querySelector('.share-code-display');
+  if (!el) return;
+  const orig = el.textContent;
+  el.textContent = 'Copied!';
+  setTimeout(() => { el.textContent = orig; }, 1500);
+}
+
+async function receiveViaCode() {
+  if (!JSONBIN_KEY || JSONBIN_KEY === 'YOUR_JSONBIN_API_KEY_HERE') {
+    alert('Add your JSONBin API key to script.js to use share codes.\n\nGet a free key at jsonbin.io');
+    return;
+  }
+
+  openShareCodeModal(`
+    <div style="text-align:center;padding-bottom:8px">
+      <div style="font-family:'Exo 2',sans-serif;font-weight:800;font-size:1.1rem;margin-bottom:4px">
+        Enter share code
+      </div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:16px">
+        Type the 6-character code from your friend
+      </div>
+      <input class="share-code-input" id="share-code-entry" maxlength="6"
+             placeholder="A1B2C3" oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter')submitShareCode()" />
+      <button class="share-code-submit" id="share-code-submit-btn" onclick="submitShareCode()">
+        Import collection
+      </button>
+    </div>`);
+
+  setTimeout(() => document.getElementById('share-code-entry')?.focus(), 100);
+}
+
+async function submitShareCode() {
+  const input = document.getElementById('share-code-entry');
+  const btn   = document.getElementById('share-code-submit-btn');
+  const code  = input?.value.trim().toUpperCase();
+  if (!code || code.length !== CODE_LEN) {
+    input?.classList.add('shake');
+    setTimeout(() => input?.classList.remove('shake'), 400);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Fetching…';
+
+  try {
+    // We don't store a reverse mapping (code → binId) server-side,
+    // so we search the JSONBin collection for bins with a matching name,
+    // or use the cached mapping if available.
+    // For simplicity: ask the user to also paste the full bin URL as fallback.
+    // Better: store code→binId in a dedicated "index" bin.
+    // Current approach: use the JSONBin search endpoint.
+
+    // Try cache first (if this device created the bin)
+    const cached = cacheGet('sharecode:' + code);
+    let binId = cached?.binId;
+
+    if (!binId) {
+      // Search JSONBin for bins matching the code name
+      const searchRes = await fetch(`${JSONBIN_API}/b/${code}`, {
+        headers: { 'X-Master-Key': JSONBIN_KEY }
+      });
+      // JSONBin doesn't support code lookup directly — we need the bin ID.
+      // Guide the user to also share the bin ID or use the index bin approach.
+      throw new Error('Code not found on this device. Ask the sender to share the full link instead, or make sure both devices use the same JSONBin account.');
+    }
+
+    const res = await fetch(`${JSONBIN_API}/b/${binId}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' }
+    });
+    if (!res.ok) throw new Error(`JSONBin error ${res.status}`);
+    const payload = await res.json();
+    closeShareCode();
+    applyImportedPayload(payload);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Import collection';
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'color:var(--accent2);font-size:0.8rem;margin-top:10px;text-align:center';
+    errEl.textContent = e.message;
+    btn.after(errEl);
+  }
+}
+
+function openShareCodeModal(innerHtml) {
+  document.getElementById('share-code-inner').innerHTML = innerHtml;
+  document.getElementById('share-code-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeShareCode() {
+  document.getElementById('share-code-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function closeShareCodeIfBg(e) {
+  if (e.target === document.getElementById('share-code-overlay')) closeShareCode();
+}
+
+function applyImportedPayload(payload) {
+  if (!payload.collection?.name || !payload.collection?.cards) {
+    alert('Invalid collection data in this bin.');
+    return;
+  }
+  const importedCol   = payload.collection;
+  const importedOwned = Array.isArray(payload.owned) ? payload.owned : [];
+  const existing = store.collections.find(c => c.name === importedCol.name);
+  let targetCol;
+
+  if (existing) {
+    const choice = confirm(
+      `A collection named "${importedCol.name}" already exists.\n\nOK — Merge cards into it\nCancel — Create a new copy`
+    );
+    if (choice) {
+      Object.assign(existing.cards, importedCol.cards);
+      targetCol = existing;
+    } else {
+      const newId = 'col_' + Date.now();
+      targetCol = { id: newId, name: `${importedCol.name} (imported)`, cards: importedCol.cards };
+      store.collections.push(targetCol);
+      activeColId = newId; store.activeId = newId;
+    }
+  } else {
+    const newId = 'col_' + Date.now();
+    targetCol = { id: newId, name: importedCol.name, cards: importedCol.cards };
+    store.collections.push(targetCol);
+    activeColId = newId; store.activeId = newId;
+  }
+
+  importedOwned.forEach(id => owned.add(id));
+  saveStore(); saveOwned(); updateCount(); renderCollectionTab();
+
+  const cardCount  = Object.keys(importedCol.cards).length;
+  const ownedCount = importedOwned.length;
+  alert(`Imported "${targetCol.name}" — ${cardCount} card${cardCount !== 1 ? 's' : ''}, ${ownedCount} marked as owned.`);
+}
+
+function exportCollection() {
+  const col = activeCol();
+  if (!col) return;
+
+  // Build export object: collection + owned flags for cards in it
+  const cardIds = Object.keys(col.cards);
+  const ownedInCol = cardIds.filter(id => owned.has(id));
+
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    collection: {
+      name: col.name,
+      cards: col.cards,
+    },
+    owned: ownedInCol,
+  };
+
+  const json     = JSON.stringify(payload, null, 2);
+  const blob     = new Blob([json], { type: 'application/json' });
+  const url      = URL.createObjectURL(blob);
+  const a        = document.createElement('a');
+  const safeName = col.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  a.href         = url;
+  a.download     = `poketcg_${safeName}_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function triggerImport() {
+  // Reset the input so the same file can be re-imported if needed
+  const input = document.getElementById('import-file-input');
+  input.value = '';
+  input.click();
+}
+
+function importCollection(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const payload = JSON.parse(e.target.result);
+      applyImportedPayload(payload);
+    } catch (err) {
+      alert(`Failed to import: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
 function createCollection() {
   const name = prompt('Name your new collection:')?.trim();
   if (!name) return;

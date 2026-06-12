@@ -395,9 +395,22 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
 .col-toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-bottom: 14px;
+  gap: 8px;
 }
+.col-tool-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 600; font-size: 0.78rem;
+  padding: 6px 12px; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.col-tool-btn:hover { border-color: var(--accent); color: var(--accent); }
 .hide-owned-btn {
   display: flex; align-items: center; gap: 6px;
   background: var(--surface);
@@ -831,6 +844,56 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   }
   .modal-img { width: 180px; }
 }
+
+/* ── Share code display ───────────────────────────────── */
+.share-code-display {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 800;
+  font-size: 2.4rem;
+  letter-spacing: 0.25em;
+  text-align: center;
+  color: var(--accent);
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  padding: 18px 24px;
+  width: 100%;
+  margin: 8px 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.share-code-display:hover { background: rgba(245,197,24,0.08); }
+.share-code-hint {
+  font-size: 0.78rem; color: var(--muted);
+  text-align: center; margin-top: 4px;
+}
+.share-code-input {
+  width: 100%;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700; font-size: 1.6rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  padding: 14px;
+  outline: none;
+  text-transform: uppercase;
+  transition: border-color 0.15s;
+}
+.share-code-input:focus { border-color: var(--accent); }
+.share-code-submit {
+  width: 100%;
+  background: var(--accent); border: none;
+  border-radius: var(--radius); color: #000;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700; font-size: 1rem;
+  padding: 13px; cursor: pointer;
+  transition: opacity 0.15s; margin-top: 8px;
+}
+.share-code-submit:hover:not(:disabled) { opacity: 0.88; }
+.share-code-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ── Collection complete celebration ──────────────────── */
 .celebrate-overlay {

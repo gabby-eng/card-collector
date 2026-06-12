@@ -93,6 +93,40 @@
       </div>
     </div>
     <div class="col-toolbar">
+      <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap">
+        <button class="col-tool-btn" onclick="exportCollection()" title="Export this collection as a file">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export
+        </button>
+        <button class="col-tool-btn" onclick="triggerImport()" title="Import a collection from a file">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Import
+        </button>
+        <button class="col-tool-btn" onclick="shareViaCode()" title="Share this collection with a code">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          Share code
+        </button>
+        <button class="col-tool-btn" onclick="receiveViaCode()" title="Open a shared collection by code">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="M8 10h8M8 14h4"/>
+          </svg>
+          Enter code
+        </button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importCollection(event)" />
+      </div>
       <button class="hide-owned-btn" id="hide-owned-btn" onclick="toggleHideOwned()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
@@ -138,6 +172,14 @@
     <button class="celebrate-btn" onclick="closeCelebration()">Woohoo!</button>
   </div>
   <canvas id="confetti-canvas"></canvas>
+</div>
+
+<!-- Share code modal -->
+<div class="modal-overlay hidden" id="share-code-overlay" onclick="closeShareCodeIfBg(event)">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-close"><button onclick="closeShareCode()">✕</button></div>
+    <div class="modal-inner" id="share-code-inner"></div>
+  </div>
 </div>
 <script src="script.js"></script>
 

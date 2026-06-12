@@ -83,6 +83,7 @@
   <!-- Collection tab -->
   <div id="tab-collection" style="display:none">
     <div class="collections-bar" id="collections-bar"></div>
+    <div class="filter-row" id="rarity-filters" style="margin-bottom:16px"></div>
     <div id="collection-grid"></div>
   </div>
 </main>
@@ -584,12 +585,71 @@
   }
 
   // ── Collections tab ───────────────────────────────────────────
+  let activeRarity = ''; // '' means show all
+
   function renderCollectionTab() {
     renderCollectionsBar();
+    renderRarityFilters();
     renderCollectionGrid();
   }
 
-  function renderCollectionsBar() {
+  function renderRarityFilters() {
+    const bar = document.getElementById('rarity-filters');
+    bar.innerHTML = '';
+    const col = activeCol();
+    if (!col) { bar.style.display = 'none'; return; }
+
+    const rarities = [...new Set(
+      Object.values(col.cards).map(c => c.rarity).filter(Boolean)
+    )].sort();
+
+    if (rarities.length <= 1) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+
+    const allChip = document.createElement('button');
+    allChip.className = 'chip' + (activeRarity === '' ? ' active' : '');
+    allChip.textContent = 'All';
+    allChip.onclick = () => { activeRarity = ''; renderRarityFilters(); renderCollectionGrid(); };
+    bar.appendChild(allChip);
+
+    rarities.forEach(rarity => {
+      const chip = document.createElement('button');
+      chip.className = 'chip' + (activeRarity === rarity ? ' active' : '');
+      chip.textContent = rarity;
+      chip.onclick = () => { activeRarity = rarity; renderRarityFilters(); renderCollectionGrid(); };
+      bar.appendChild(chip);
+    });
+  }
+
+  function renderCollectionGrid() {
+    const el = document.getElementById('collection-grid');
+    const col = activeCol();
+    if (!col) { el.innerHTML = ''; return; }
+
+    const allCards = Object.values(col.cards);
+    if (!allCards.length) {
+      el.innerHTML = `<div class="state-msg"><div class="big">📦</div>
+        <h3>"${col.name}" is empty</h3>
+        <p>Search for cards and tap <em>+ Add</em> to add them here.</p></div>`;
+      return;
+    }
+
+    const cards = activeRarity ? allCards.filter(c => c.rarity === activeRarity) : allCards;
+
+    if (!cards.length) {
+      el.innerHTML = `<div class="state-msg"><div class="big">🔍</div>
+        <h3>No ${activeRarity} cards</h3>
+        <p>Try a different rarity or tap All to clear the filter.</p></div>`;
+      return;
+    }
+
+    el.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'card-grid';
+    cards.forEach(card => grid.appendChild(buildCard(card)));
+    el.appendChild(grid);
+  }
+
     const bar = document.getElementById('collections-bar');
     bar.innerHTML = '';
 
@@ -607,7 +667,7 @@
 
       tab.appendChild(nameSpan);
       tab.appendChild(countSpan);
-      tab.onclick = () => { activeColId = col.id; store.activeId = col.id; saveStore(); renderCollectionTab(); };
+      tab.onclick = () => { activeColId = col.id; store.activeId = col.id; activeRarity = ''; saveStore(); renderCollectionTab(); };
 
       // ⋯ menu button
       const menuBtn = document.createElement('button');
@@ -625,25 +685,6 @@
     newBtn.innerHTML = '＋ New list';
     newBtn.onclick = () => createCollection();
     bar.appendChild(newBtn);
-  }
-
-  function renderCollectionGrid() {
-    const el = document.getElementById('collection-grid');
-    const col = activeCol();
-    if (!col) { el.innerHTML = ''; return; }
-    const cards = Object.values(col.cards);
-    if (!cards.length) {
-      el.innerHTML = `<div class="state-msg"><div class="big">📦</div>
-        <h3>"${col.name}" is empty</h3>
-        <p>Search for cards and tap <em>+ Add</em> to add them here.</p></div>`;
-      return;
-    }
-    el.innerHTML = '';
-    const grid = document.createElement('div');
-    grid.className = 'card-grid';
-    cards.forEach(card => grid.appendChild(buildCard(card)));
-    el.appendChild(grid);
-  }
 
   // ── Collection management ─────────────────────────────────────
   function createCollection() {

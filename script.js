@@ -543,9 +543,11 @@ function renderCollectionsBar() {
   const bar = document.getElementById('collections-bar');
   bar.innerHTML = '';
 
-  store.collections.forEach(col => {
+  store.collections.forEach((col, idx) => {
     const tab = document.createElement('div');
     tab.className = 'col-tab' + (col.id === activeColId ? ' active' : '');
+    tab.draggable = true;
+    tab.dataset.colId = col.id;
 
     const nameSpan = document.createElement('span');
     nameSpan.className = 'col-tab-name';
@@ -566,6 +568,34 @@ function renderCollectionsBar() {
     menuBtn.onclick = e => { e.stopPropagation(); showColMenu(e, col); };
     tab.appendChild(menuBtn);
 
+    // ── Drag and Drop (desktop) ──────────────────────────────
+    tab.addEventListener('dragstart', e => {
+      dragSrcId = col.id;
+      tab.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', col.id);
+    });
+    tab.addEventListener('dragend', () => {
+      tab.classList.remove('dragging');
+      clearDropIndicators();
+    });
+    tab.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragSrcId && dragSrcId !== col.id) showDropIndicator(tab, e);
+    });
+    tab.addEventListener('dragleave', () => clearDropIndicators());
+    tab.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrcId && dragSrcId !== col.id) reorderCollection(dragSrcId, col.id, e);
+      clearDropIndicators();
+    });
+
+    // ── Touch drag (mobile) ──────────────────────────────────
+    tab.addEventListener('touchstart', onTouchStart, { passive: true });
+    tab.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    tab.addEventListener('touchend',   onTouchEnd,   { passive: true });
+
     bar.appendChild(tab);
   });
 
@@ -576,6 +606,134 @@ function renderCollectionsBar() {
   newBtn.onclick = () => createCollection();
   bar.appendChild(newBtn);
 }
+
+// ── Drag state ───────────────────────────────────────────────
+let dragSrcId   = null;
+let touchSrcId  = null;
+let touchClone  = null;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchScrollStart = 0;
+
+function showDropIndicator(targetTab, e) {
+  clearDropIndicators();
+  const rect = targetTab.getBoundingClientRect();
+  const midX = rect.left + rect.width / 2;
+  const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? midX;
+  targetTab.classList.add(clientX < midX ? 'drop-before' : 'drop-after');
+}
+
+function clearDropIndicators() {
+  document.querySelectorAll('.col-tab').forEach(t => {
+    t.classList.remove('drop-before', 'drop-after');
+  });
+}
+
+function reorderCollection(srcId, targetId, e) {
+  const srcIdx    = store.collections.findIndex(c => c.id === srcId);
+  const targetIdx = store.collections.findIndex(c => c.id === targetId);
+  if (srcIdx === -1 || targetIdx === -1) return;
+
+  const [moved] = store.collections.splice(srcIdx, 1);
+
+  // Determine whether to insert before or after the target
+  let insertIdx = targetIdx;
+  if (e) {
+    const targetTab = document.querySelector(`.col-tab[data-col-id="${targetId}"]`);
+    if (targetTab) {
+      const rect  = targetTab.getBoundingClientRect();
+      const midX  = rect.left + rect.width / 2;
+      const clientX = e.clientX ?? e.changedTouches?.[0]?.clientX ?? midX;
+      // After splice, recalculate target index
+      const newTargetIdx = store.collections.findIndex(c => c.id === targetId);
+      insertIdx = clientX >= midX ? newTargetIdx + 1 : newTargetIdx;
+    }
+  }
+
+  store.collections.splice(insertIdx, 0, moved);
+  saveStore();
+  renderCollectionsBar();
+}
+
+// ── Touch drag handlers ──────────────────────────────────────
+function onTouchStart(e) {
+  const tab = e.currentTarget;
+  touchSrcId   = tab.dataset.colId;
+  touchStartX  = e.touches[0].clientX;
+  touchStartY  = e.touches[0].clientY;
+  touchScrollStart = document.getElementById('collections-bar').scrollLeft;
+}
+
+function onTouchMove(e) {
+  if (!touchSrcId) return;
+  const dx = Math.abs(e.touches[0].clientX - touchStartX);
+  const dy = Math.abs(e.touches[0].clientY - touchStartY);
+
+  // Only intercept clearly horizontal drags; let vertical scroll pass
+  if (dy > dx && !touchClone) return;
+
+  // Once we decide it's a drag, prevent scroll
+  if (dx > 6) e.preventDefault();
+
+  if (!touchClone) {
+    const srcTab = document.querySelector(`.col-tab[data-col-id="${touchSrcId}"]`);
+    if (!srcTab) return;
+    touchClone = srcTab.cloneNode(true);
+    touchClone.className = 'col-tab touch-drag-clone';
+    const rect = srcTab.getBoundingClientRect();
+    touchClone.style.cssText = `
+      position:fixed; z-index:9999; pointer-events:none;
+      width:${rect.width}px; opacity:0.85;
+      left:${rect.left}px; top:${rect.top}px;
+      transform:scale(1.05); transition:none;
+    `;
+    document.body.appendChild(touchClone);
+    srcTab.classList.add('dragging');
+  }
+
+  const tx = e.touches[0].clientX - touchStartX;
+  const srcTab = document.querySelector(`.col-tab[data-col-id="${touchSrcId}"]`);
+  if (srcTab) {
+    const rect = srcTab.getBoundingClientRect();
+    touchClone.style.left = (rect.left + tx) + 'px';
+  }
+
+  // Find which tab we're hovering over
+  const cloneRect = touchClone.getBoundingClientRect();
+  const cloneMid  = cloneRect.left + cloneRect.width / 2;
+  clearDropIndicators();
+  document.querySelectorAll(`.col-tab:not(.dragging)`).forEach(t => {
+    const r = t.getBoundingClientRect();
+    if (cloneMid >= r.left && cloneMid <= r.right) {
+      t.classList.add(cloneMid < r.left + r.width / 2 ? 'drop-before' : 'drop-after');
+    }
+  });
+}
+
+function onTouchEnd(e) {
+  if (!touchSrcId) return;
+
+  if (touchClone) {
+    // Find drop target from indicator
+    const beforeEl = document.querySelector('.col-tab.drop-before');
+    const afterEl  = document.querySelector('.col-tab.drop-after');
+    const targetEl = beforeEl || afterEl;
+    const targetId = targetEl?.dataset.colId;
+
+    touchClone.remove(); touchClone = null;
+    document.querySelector(`.col-tab[data-col-id="${touchSrcId}"]`)?.classList.remove('dragging');
+    clearDropIndicators();
+
+    if (targetId && targetId !== touchSrcId) {
+      const fakeE = { clientX: afterEl ? 999999 : 0, changedTouches: null };
+      if (afterEl) fakeE.clientX = 999999;
+      reorderCollection(touchSrcId, targetId, afterEl ? { clientX: 999999 } : { clientX: 0 });
+    }
+  }
+
+  touchSrcId = null;
+}
+
 
 function renderCollectionGrid() {
   const el = document.getElementById('collection-grid');

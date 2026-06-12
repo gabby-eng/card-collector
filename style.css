@@ -334,6 +334,24 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
 }
 .new-col-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ── Collection drag-to-reorder ───────────────────────── */
+.col-tab[draggable="true"] { cursor: grab; }
+.col-tab[draggable="true"]:active { cursor: grabbing; }
+.col-tab.dragging {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.col-tab.drop-before {
+  box-shadow: -3px 0 0 0 var(--accent);
+}
+.col-tab.drop-after {
+  box-shadow: 3px 0 0 0 var(--accent);
+}
+.touch-drag-clone {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  border-color: var(--accent) !important;
+}
+
 /* ── Collection toolbar (hide owned toggle) ───────────── */
 .col-toolbar {
   display: flex;

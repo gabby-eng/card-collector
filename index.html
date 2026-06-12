@@ -120,6 +120,17 @@
 <!-- Context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none"></div>
 
+<!-- Collection complete celebration -->
+<div class="celebrate-overlay hidden" id="celebrate-overlay" onclick="closeCelebration()">
+  <div class="celebrate-modal">
+    <div class="celebrate-emoji">🎉</div>
+    <div class="celebrate-title">Collection Complete!</div>
+    <div class="celebrate-sub" id="celebrate-sub"></div>
+    <button class="celebrate-btn" onclick="closeCelebration()">Woohoo!</button>
+  </div>
+  <canvas id="confetti-canvas"></canvas>
+</div>
+
 <script>
   // ── Config ──────────────────────────────────────────────────
   const API      = 'https://api.pokemontcg.io/v2';
@@ -844,6 +855,8 @@
       }
     }
     saveOwned();
+    // Check if any collection is now fully owned
+    if (owned.has(cardId)) checkCollectionComplete(cardId);
     // Refresh modal owned button if open
     const modalBtn = document.getElementById('modal-owned-btn');
     if (modalBtn && modalBtn.dataset.cardId === cardId) {
@@ -967,6 +980,7 @@
       if (btn) btn.innerHTML = ownedBtnHtml(true);
     }
     saveOwned();
+    if (owned.has(cardId)) checkCollectionComplete(cardId);
     // Update any visible card in the grid
     if (lastResults.length) renderResults(lastResults);
     else if (currentTab === 'collection') renderCollectionGrid();
@@ -1008,6 +1022,87 @@
 
   function closeModalIfBg(e) {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
+  }
+
+  // ── Collection complete celebration ───────────────────────────
+  function checkCollectionComplete(newlyOwnedCardId) {
+    // Find any collection where: this card exists AND all cards are now owned
+    const completedCols = store.collections.filter(col => {
+      const cardIds = Object.keys(col.cards);
+      if (!cardIds.includes(newlyOwnedCardId)) return false;
+      if (cardIds.length === 0) return false;
+      return cardIds.every(id => owned.has(id));
+    });
+    if (completedCols.length > 0) {
+      const names = completedCols.map(c => c.name).join(' & ');
+      launchCelebration(names, completedCols[0].cards);
+    }
+  }
+
+  let confettiAnim = null;
+
+  function launchCelebration(colName, cards) {
+    const overlay = document.getElementById('celebrate-overlay');
+    document.getElementById('celebrate-sub').textContent =
+      `You now own every card in "${colName}" — all ${Object.keys(cards).length} of them!`;
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    startConfetti();
+  }
+
+  function closeCelebration() {
+    document.getElementById('celebrate-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+    if (confettiAnim) { cancelAnimationFrame(confettiAnim); confettiAnim = null; }
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function startConfetti() {
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const COLORS = ['#f5c518','#e84040','#3ddc84','#60a5fa','#c084fc','#fb923c','#ffffff'];
+    const pieces = Array.from({ length: 120 }, () => ({
+      x:    Math.random() * canvas.width,
+      y:    Math.random() * canvas.height - canvas.height,
+      w:    6 + Math.random() * 8,
+      h:    10 + Math.random() * 6,
+      r:    Math.random() * Math.PI * 2,
+      dr:   (Math.random() - 0.5) * 0.15,
+      vy:   3 + Math.random() * 4,
+      vx:   (Math.random() - 0.5) * 2,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      opacity: 0.85 + Math.random() * 0.15,
+    }));
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.r);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+        p.x  += p.vx;
+        p.y  += p.vy;
+        p.r  += p.dr;
+        p.vy += 0.08; // gravity
+        // Reset pieces that fall off screen
+        if (p.y > canvas.height + 20) {
+          p.y  = -20;
+          p.x  = Math.random() * canvas.width;
+          p.vy = 3 + Math.random() * 4;
+        }
+      });
+      confettiAnim = requestAnimationFrame(draw);
+    }
+    draw();
   }
 
   // ── Persistence ───────────────────────────────────────────────

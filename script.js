@@ -1,12 +1,12 @@
 // ── Config ──────────────────────────────────────────────────
 const API      = 'https://api.pokemontcg.io/v2';
-const API_KEY  = '78372518-aa47-40c9-9590-9fd68c6a4a26';
+const API_KEY  = '';
 const PAGE_SIZE = 20;
 
 // ── JSONBin config ────────────────────────────────────────────
 // Get a free API key at https://jsonbin.io → API Keys
 // Paste your key below — keep this file out of your public repo!
-const JSONBIN_KEY        = '$2a$10$Ru87abEW767x9/g728sgLuLdfLwhkuH.Aw33GsN9djnYNbSbc1PGa';
+const JSONBIN_KEY        = 'YOUR_JSONBIN_API_KEY_HERE';
 const JSONBIN_API        = 'https://api.jsonbin.io/v3';
 const JSONBIN_COLLECTION = ''; // optional: your JSONBin collection ID to organise bins
 
@@ -1043,56 +1043,6 @@ function applyImportedPayload(payload) {
   alert(`Imported "${targetCol.name}" — ${cardCount} card${cardCount !== 1 ? 's' : ''}, ${ownedCount} marked as owned.`);
 }
 
-function exportCollection() {
-  const col = activeCol();
-  if (!col) return;
-
-  // Build export object: collection + owned flags for cards in it
-  const cardIds = Object.keys(col.cards);
-  const ownedInCol = cardIds.filter(id => owned.has(id));
-
-  const payload = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    collection: {
-      name: col.name,
-      cards: col.cards,
-    },
-    owned: ownedInCol,
-  };
-
-  const json     = JSON.stringify(payload, null, 2);
-  const blob     = new Blob([json], { type: 'application/json' });
-  const url      = URL.createObjectURL(blob);
-  const a        = document.createElement('a');
-  const safeName = col.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  a.href         = url;
-  a.download     = `poketcg_${safeName}_${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function triggerImport() {
-  // Reset the input so the same file can be re-imported if needed
-  const input = document.getElementById('import-file-input');
-  input.value = '';
-  input.click();
-}
-
-function importCollection(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const payload = JSON.parse(e.target.result);
-      applyImportedPayload(payload);
-    } catch (err) {
-      alert(`Failed to import: ${err.message}`);
-    }
-  };
-  reader.readAsText(file);
-}
 function createCollection() {
   const name = prompt('Name your new collection:')?.trim();
   if (!name) return;

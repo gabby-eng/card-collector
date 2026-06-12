@@ -639,7 +639,6 @@ let touchSrcId  = null;
 let touchClone  = null;
 let touchStartX = 0;
 let touchStartY = 0;
-let touchScrollStart = 0;
 
 function showDropIndicator(targetTab, e) {
   clearDropIndicators();
@@ -681,46 +680,69 @@ function reorderCollection(srcId, targetId, e) {
   renderCollectionsBar();
 }
 
-// ── Touch drag handlers ──────────────────────────────────────
+// ── Touch drag handlers (long-press to drag) ─────────────────
+let longPressTimer = null;
+const LONG_PRESS_MS = 450;
+
 function onTouchStart(e) {
   const tab = e.currentTarget;
   touchSrcId   = tab.dataset.colId;
   touchStartX  = e.touches[0].clientX;
   touchStartY  = e.touches[0].clientY;
-  touchScrollStart = document.getElementById('collections-bar').scrollLeft;
+
+  // Start long-press timer — drag only activates after holding
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null;
+    // Trigger haptic feedback on iOS if available
+    if (navigator.vibrate) navigator.vibrate(30);
+    // Mark as drag-ready; onTouchMove will create the clone on next move
+    tab.classList.add('long-press-ready');
+  }, LONG_PRESS_MS);
 }
 
 function onTouchMove(e) {
   if (!touchSrcId) return;
+
   const dx = Math.abs(e.touches[0].clientX - touchStartX);
   const dy = Math.abs(e.touches[0].clientY - touchStartY);
 
-  // Only intercept clearly horizontal drags; let vertical scroll pass
-  if (dy > dx && !touchClone) return;
+  // If the finger moved more than 8px before long-press fired, cancel it
+  // so normal horizontal scroll of the bar works unimpeded
+  if (longPressTimer && (dx > 8 || dy > 8)) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    touchSrcId = null;
+    return;
+  }
 
-  // Once we decide it's a drag, prevent scroll
-  if (dx > 6) e.preventDefault();
+  // Long-press hasn't fired yet — let the browser scroll normally
+  if (longPressTimer) return;
+
+  const srcTab = document.querySelector(`.col-tab[data-col-id="${touchSrcId}"]`);
+  if (!srcTab) return;
+
+  // Prevent page scroll once dragging
+  e.preventDefault();
 
   if (!touchClone) {
-    const srcTab = document.querySelector(`.col-tab[data-col-id="${touchSrcId}"]`);
-    if (!srcTab) return;
     touchClone = srcTab.cloneNode(true);
     touchClone.className = 'col-tab touch-drag-clone';
     const rect = srcTab.getBoundingClientRect();
     touchClone.style.cssText = `
       position:fixed; z-index:9999; pointer-events:none;
-      width:${rect.width}px; opacity:0.85;
+      width:${rect.width}px; opacity:0.9;
       left:${rect.left}px; top:${rect.top}px;
-      transform:scale(1.05); transition:none;
+      transform:scale(1.08); transition:transform 0.15s;
     `;
     document.body.appendChild(touchClone);
     srcTab.classList.add('dragging');
+    srcTab.classList.remove('long-press-ready');
   }
 
   const tx = e.touches[0].clientX - touchStartX;
-  const srcTab = document.querySelector(`.col-tab[data-col-id="${touchSrcId}"]`);
-  if (srcTab) {
-    const rect = srcTab.getBoundingClientRect();
+  const srcTabCurrent = document.querySelector(`.col-tab[data-col-id="${touchSrcId}"]`);
+  if (srcTabCurrent) {
+    const rect = srcTabCurrent.getBoundingClientRect();
     touchClone.style.left = (rect.left + tx) + 'px';
   }
 
@@ -737,10 +759,18 @@ function onTouchMove(e) {
 }
 
 function onTouchEnd(e) {
+  // Always clear long-press timer on finger lift
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+
+  // Clean up long-press-ready state even if no drag happened
+  document.querySelectorAll('.long-press-ready').forEach(t => t.classList.remove('long-press-ready'));
+
   if (!touchSrcId) return;
 
   if (touchClone) {
-    // Find drop target from indicator
     const beforeEl = document.querySelector('.col-tab.drop-before');
     const afterEl  = document.querySelector('.col-tab.drop-after');
     const targetEl = beforeEl || afterEl;
@@ -751,14 +781,13 @@ function onTouchEnd(e) {
     clearDropIndicators();
 
     if (targetId && targetId !== touchSrcId) {
-      const fakeE = { clientX: afterEl ? 999999 : 0, changedTouches: null };
-      if (afterEl) fakeE.clientX = 999999;
       reorderCollection(touchSrcId, targetId, afterEl ? { clientX: 999999 } : { clientX: 0 });
     }
   }
 
   touchSrcId = null;
 }
+
 
 
 function renderCollectionGrid() {

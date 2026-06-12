@@ -3,6 +3,48 @@ const API      = 'https://api.pokemontcg.io/v2';
 const API_KEY  = '';
 const PAGE_SIZE = 20;
 
+// ── API cache ─────────────────────────────────────────────────
+// Caches responses in localStorage with a TTL.
+// Key format: "ptcg_cache:<url>"
+const CACHE_TTL_CARDS = 1000 * 60 * 60 * 24;      // 24 hours for card searches
+const CACHE_TTL_SETS  = 1000 * 60 * 60 * 24 * 7;  // 7 days for sets list
+const CACHE_MAX_KEYS  = 100; // max cache entries before pruning oldest
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem('ptcg_cache:' + key);
+    if (!raw) return null;
+    const { ts, ttl, data } = JSON.parse(raw);
+    if (Date.now() - ts > ttl) { localStorage.removeItem('ptcg_cache:' + key); return null; }
+    return data;
+  } catch { return null; }
+}
+
+function cacheSet(key, data, ttl) {
+  try {
+    // Prune oldest entries if over limit
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith('ptcg_cache:'));
+    if (allKeys.length >= CACHE_MAX_KEYS) {
+      const entries = allKeys.map(k => {
+        try { return { k, ts: JSON.parse(localStorage.getItem(k)).ts }; } catch { return { k, ts: 0 }; }
+      }).sort((a, b) => a.ts - b.ts);
+      // Remove oldest 20%
+      entries.slice(0, Math.ceil(CACHE_MAX_KEYS * 0.2)).forEach(e => localStorage.removeItem(e.k));
+    }
+    localStorage.setItem('ptcg_cache:' + key, JSON.stringify({ ts: Date.now(), ttl, data }));
+  } catch {} // Silently fail if localStorage is full
+}
+
+async function cachedFetch(url, headers, ttl) {
+  const cached = cacheGet(url);
+  if (cached) return cached;
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  cacheSet(url, data, ttl);
+  return data;
+}
+
 // ── Collections state ────────────────────────────────────────
 // Structure: { collections: [{id, name, cards: {cardId: card}}], activeId }
 let store      = loadStore();
@@ -111,12 +153,11 @@ function setSearchMode(mode) {
 async function loadSets() {
   document.getElementById('set-list').innerHTML =
     '<div class="spinner" style="margin:20px auto;width:24px;height:24px;border-width:2px"></div>';
+  const url = `${API}/sets?orderBy=-releaseDate&pageSize=250`;
   const headers = { 'Content-Type': 'application/json' };
   if (API_KEY) headers['X-Api-Key'] = API_KEY;
   try {
-    const res = await fetch(`${API}/sets?orderBy=-releaseDate&pageSize=250`, { headers });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await cachedFetch(url, headers, CACHE_TTL_SETS);
     allSets = data.data || [];
     renderSetList();
   } catch (e) {
@@ -194,18 +235,17 @@ async function fetchSetCards() {
   btn.disabled = true;
   showSearchState('loading');
 
-  const nameQ   = document.getElementById('search-input').value.trim();
+  const nameQ = document.getElementById('search-input').value.trim();
   let query = `set.id:${currentSetId}`;
   if (nameQ) query += ` name:${nameQ}*`;
 
   const params = new URLSearchParams({ q: query, page: currentPage, pageSize: PAGE_SIZE, orderBy: 'number' });
+  const url = `${API}/cards?${params}`;
   const headers = { 'Content-Type': 'application/json' };
   if (API_KEY) headers['X-Api-Key'] = API_KEY;
 
   try {
-    const res  = await fetch(`${API}/cards?${params}`, { headers });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await cachedFetch(url, headers, CACHE_TTL_CARDS);
     totalCards  = data.totalCount || 0;
     lastResults = data.data || [];
     renderResults(lastResults);
@@ -239,16 +279,11 @@ async function randomCard() {
   if (API_KEY) headers['X-Api-Key'] = API_KEY;
 
   try {
-    // First: get total card count
-    const countRes = await fetch(
-      `${API}/cards?pageSize=1&page=1`,
-      { headers }
-    );
-    if (!countRes.ok) throw new Error(`HTTP ${countRes.status}`);
-    const countData = await countRes.json();
+    // First: get total card count (cached for 24h)
+    const countData = await cachedFetch(`${API}/cards?pageSize=1&page=1`, headers, CACHE_TTL_CARDS);
     const total = countData.totalCount || 10000;
 
-    // Pick a random page out of all cards
+    // Pick a random page — never cache random results
     const randomPage = Math.floor(Math.random() * total) + 1;
     const cardRes = await fetch(
       `${API}/cards?pageSize=1&page=${randomPage}`,
@@ -292,13 +327,12 @@ async function fetchCards() {
   if (searchMode === 'name' && currentType) query += ` types:${currentType}`;
 
   const params = new URLSearchParams({ q: query, page: currentPage, pageSize: PAGE_SIZE, orderBy: 'name' });
+  const url = `${API}/cards?${params}`;
   const headers = { 'Content-Type': 'application/json' };
   if (API_KEY) headers['X-Api-Key'] = API_KEY;
 
   try {
-    const res  = await fetch(`${API}/cards?${params}`, { headers });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await cachedFetch(url, headers, CACHE_TTL_CARDS);
     totalCards  = data.totalCount || 0;
     lastResults = data.data || [];
     renderResults(lastResults);
@@ -871,9 +905,7 @@ async function checkDeepLink() {
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (API_KEY) headers['X-Api-Key'] = API_KEY;
-    const res = await fetch(`${API}/cards/${encodeURIComponent(cardId)}`, { headers });
-    if (!res.ok) return;
-    const data = await res.json();
+    const data = await cachedFetch(`${API}/cards/${encodeURIComponent(cardId)}`, headers, CACHE_TTL_CARDS);
     if (data.data) openModal(data.data);
   } catch {}
 }

@@ -552,37 +552,38 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   background: linear-gradient(
     115deg,
     transparent 0%,
-    transparent 25%,
-    rgba(255,255,255,0.08) 35%,
-    rgba(160,100,255,0.18) 42%,
-    rgba(80,180,255,0.22) 48%,
-    rgba(100,255,180,0.18) 54%,
-    rgba(255,220,80,0.18) 60%,
-    rgba(255,100,120,0.15) 66%,
-    rgba(255,255,255,0.08) 75%,
-    transparent 85%,
+    transparent 15%,
+    rgba(255,255,255,0.15) 28%,
+    rgba(180,80,255,0.55) 36%,
+    rgba(60,160,255,0.60) 44%,
+    rgba(80,255,200,0.55) 52%,
+    rgba(255,230,60,0.55) 60%,
+    rgba(255,80,120,0.50) 68%,
+    rgba(255,255,255,0.15) 78%,
+    transparent 88%,
     transparent 100%
   );
-  background-size: 200% 100%;
+  background-size: 250% 100%;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s;
+  mix-blend-mode: screen;
 }
 .pcard.owned .pcard-img-wrap::after {
   opacity: 1;
-  animation: holo-sweep 3s linear infinite;
+  animation: holo-sweep 2.2s linear infinite;
 }
 @keyframes holo-sweep {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0%   { background-position: 250% 0; }
+  100% { background-position: -250% 0; }
 }
-/* Subtle gold border glow on owned cards */
+/* Gold border glow on owned cards */
 .pcard.owned {
-  box-shadow: 0 0 0 1px rgba(245,197,24,0.4), 0 4px 20px rgba(245,197,24,0.1);
+  box-shadow: 0 0 0 2px rgba(245,197,24,0.7), 0 4px 24px rgba(245,197,24,0.25);
 }
 @media (hover: hover) {
   .pcard.owned:hover {
-    box-shadow: 0 4px 28px rgba(245,197,24,0.3);
+    box-shadow: 0 0 0 2px rgba(245,197,24,0.9), 0 6px 32px rgba(245,197,24,0.4);
   }
 }
 

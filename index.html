@@ -531,6 +531,7 @@
       font-weight: 600; font-size: 0.9rem;
       padding: 12px; cursor: pointer;
       transition: border-color 0.15s, color 0.15s;
+      text-decoration: none;
     }
     .modal-share-btn:hover { border-color: var(--accent); color: var(--accent); }
     .modal-share-btn.copied { border-color: #3ddc84; color: #3ddc84; }
@@ -1177,14 +1178,15 @@
               onclick="toggleModalOwned('${card.id}')">
         ${ownedBtnHtml(isOwned)}
       </button>
-      <button class="modal-share-btn" id="modal-share-btn"
-              onclick="shareCard(${JSON.stringify(card).replace(/"/g,'&quot;')})">
+      <a class="modal-share-btn"
+         href="${card.tcgplayer?.url || `https://www.tcgplayer.com/search/pokemon/product?q=${encodeURIComponent(card.name)}&view=grid`}"
+         target="_blank" rel="noopener noreferrer">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
         </svg>
-        Share card
-      </button>
+        View on TCGPlayer
+      </a>
       <div class="modal-add-section">
         <div class="modal-add-label">Add to collection</div>
         <div class="modal-col-list">${colRows}</div>
@@ -1227,42 +1229,6 @@
     currentQuery = artist; currentPage = 1;
     switchTab('search');
     fetchCards();
-  }
-
-  // ── Share card ────────────────────────────────────────────────
-  async function shareCard(card) {
-    const url = new URL(window.location.href);
-    url.search = '';
-    url.searchParams.set('card', card.id);
-    const shareUrl = url.toString();
-
-    // Use native share sheet on mobile (iOS Safari), clipboard on desktop
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${card.name} — PokéTCG`,
-          text: `Check out this Pokémon card: ${card.name} (${card.set?.name || ''})`,
-          url: shareUrl,
-        });
-        return;
-      } catch (e) {
-        if (e.name === 'AbortError') return; // user cancelled — do nothing
-      }
-    }
-    // Clipboard fallback
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-    } catch {
-      // Final fallback: prompt
-      prompt('Copy this link:', shareUrl);
-      return;
-    }
-    const btn = document.getElementById('modal-share-btn');
-    if (!btn) return;
-    const orig = btn.innerHTML;
-    btn.classList.add('copied');
-    btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Link copied!`;
-    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
   }
 
   // ── Deep-link: open card from ?card=<id> on page load ─────────

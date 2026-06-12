@@ -159,6 +159,1516 @@
     }
     button.search-btn:hover { opacity: 0.88; }
     button.search-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PokéDex TCG — My Collection</title>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;800&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Tokens ───────────────────────────────────────────── */
+    :root {
+      --bg:        #0d0f1a;
+      --surface:   #151828;
+      --border:    #252a42;
+      --accent:    #f5c518;
+      --accent2:   #e84040;
+      --text:      #e8eaf6;
+      --muted:     #7b82a8;
+      --radius:    14px;
+      --card-w:    180px;
+      --theme-transition: background 0.25s, color 0.25s, border-color 0.25s;
+    }
+    html.light {
+      --bg:      #f0f2f8;
+      --surface: #ffffff;
+      --border:  #d4d8ec;
+      --text:    #1a1d2e;
+      --muted:   #6b7094;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      min-height: 100dvh;
+      transition: var(--theme-transition);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo span { color: var(--accent2); }
+    .logo img {
+      width: 36px; height: 36px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .tab-bar button {
+      background: none; border: none;
+      color: var(--muted);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.8rem;
+      padding: 5px 12px; border-radius: 6px;
+      cursor: pointer; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tab-bar button.active { background: var(--surface); color: var(--text); }
+
+    .collection-count {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .collection-count strong { color: var(--accent); }
+
+    .theme-toggle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px; cursor: pointer;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      transition: border-color 0.15s, background 0.25s;
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover { border-color: var(--accent); }
+
+    /* ── Main Layout ──────────────────────────────────────── */
+    main { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+
+    /* ── Search Mode Toggle ───────────────────────────────── */
+    .search-mode-row { display: flex; gap: 6px; margin-bottom: 10px; }
+    .mode-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px; color: var(--muted);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.78rem;
+      padding: 5px 14px; cursor: pointer; transition: all 0.15s;
+    }
+    .mode-btn.active {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(245,197,24,0.08);
+    }
+
+    /* ── Search Bar ───────────────────────────────────────── */
+    .search-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .search-wrap { position: relative; flex: 1; }
+    .search-wrap svg {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    input[type="search"] {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-size: 16px;
+      padding: 12px 14px 12px 44px;
+      outline: none; transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    input[type="search"]:focus { border-color: var(--accent); }
+    input[type="search"]::placeholder { color: var(--muted); }
+
+    button.search-btn {
+      background: var(--accent); border: none;
+      border-radius: var(--radius); color: #000;
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700; font-size: 0.9rem;
+      padding: 0 20px; cursor: pointer;
+      transition: opacity 0.15s; white-space: nowrap;
+    }
+    button.search-btn:hover { opacity: 0.88; }
+    button.search-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    button.random-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1.2rem;
+      width: 46px; height: 46px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    button.random-btn:hover { border-color: var(--accent); transform: rotate(20deg); }
+    button.random-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    @keyframes dice-spin {
+      0%   { transform: rotate(0deg) scale(1); }
+      50%  { transform: rotate(180deg) scale(1.2); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
+
+    /* ── Filter chips ─────────────────────────────────────── */
+    .filter-row {
+      display: flex; gap: 8px;
+      flex-wrap: nowrap; overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; margin-bottom: 20px;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-row > span { flex-shrink: 0; font-size: 0.78rem; color: var(--muted); align-self: center; }
+    .chip {
+      flex-shrink: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; color: var(--muted);
+      font-size: 0.78rem; font-weight: 500;
+      padding: 5px 14px; cursor: pointer; transition: all 0.15s;
+    }
+    .chip.active { border-color: var(--accent); color: var(--accent); }
+    .chip:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+    /* ── Results toolbar ──────────────────────────────────── */
+    .results-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+    .results-count {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .results-count strong { color: var(--text); }
+    .add-all-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.78rem;
+      padding: 6px 14px;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .add-all-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .add-all-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .add-all-btn.done { border-color: #3ddc84; color: #3ddc84; }
+
+    /* ── Collections bar ──────────────────────────────────── */
+    .collections-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .collections-bar::-webkit-scrollbar { display: none; }
+
+    .col-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .col-tab:hover { border-color: var(--muted); }
+    .col-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+    .col-tab-name {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.82rem;
+    }
+    .col-tab-count {
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.15);
+      border-radius: 999px;
+      padding: 1px 7px;
+      font-weight: 600;
+    }
+    .col-tab.active .col-tab-count { background: rgba(0,0,0,0.2); }
+
+    .col-menu-btn {
+      background: none; border: none;
+      color: var(--muted); font-size: 1.1rem;
+      cursor: pointer; padding: 4px 6px;
+      border-radius: 6px; line-height: 1;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+    .col-menu-btn:hover { color: var(--text); }
+
+    .new-col-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.82rem;
+      padding: 6px 14px;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .new-col-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Section heading ──────────────────────────────────── */
+    .section-head {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 14px;
+    }
+    .section-head h2 {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700; font-size: 1rem;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
+    }
+
+    /* ── Card Grid ────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+      gap: 16px;
+    }
+
+    /* ── Pokemon Card ─────────────────────────────────────── */
+    .pcard {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+      position: relative;
+    }
+    @media (hover: hover) {
+      .pcard:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent);
+        box-shadow: 0 8px 32px rgba(245,197,24,0.15);
+      }
+      .pcard.in-collection:hover {
+        border-color: #3ddc84;
+        box-shadow: 0 8px 32px rgba(61,220,132,0.15);
+      }
+    }
+    .pcard.in-collection { border-color: #3ddc84; }
+
+    .pcard-img {
+      width: 100%; aspect-ratio: 63/88;
+      object-fit: cover; display: block; background: var(--bg);
+    }
+    .pcard-img.loading {
+      background: linear-gradient(120deg, var(--bg) 30%, var(--border) 50%, var(--bg) 70%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .pcard-body { padding: 10px 12px; }
+    .pcard-name {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700; font-size: 0.88rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+    }
+    .pcard-set {
+      font-size: 0.72rem; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .pcard-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-top: 1px solid var(--border);
+    }
+    .rarity-badge {
+      font-size: 0.68rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .collect-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--muted);
+      font-size: 0.72rem; font-weight: 600;
+      padding: 6px 10px; min-height: 32px;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .collect-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .collect-btn.collected {
+      background: rgba(61,220,132,0.12);
+      border-color: #3ddc84; color: #3ddc84;
+    }
+
+    .in-collection-badge {
+      position: absolute; top: 8px; right: 8px;
+      width: 22px; height: 22px; background: #3ddc84;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 11px;
+    }
+
+    /* ── Empty / loading states ───────────────────────────── */
+    .state-msg { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .state-msg .big { font-size: 3rem; margin-bottom: 12px; }
+    .state-msg h3 {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700; font-size: 1.1rem;
+      color: var(--text); margin-bottom: 6px;
+    }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 60px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Pagination ───────────────────────────────────────── */
+    .pagination {
+      display: flex; gap: 8px;
+      justify-content: center; align-items: center; margin-top: 32px;
+    }
+    .pagination.hidden { display: none; }
+    .pagination button {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.85rem;
+      padding: 10px 18px; cursor: pointer; transition: all 0.15s;
+    }
+    .pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .pagination .page-info { color: var(--muted); font-size: 0.85rem; }
+
+    /* ── Modal ────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.hidden { display: none; }
+
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; width: 100%; max-width: 560px;
+      max-height: 90dvh; overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+    .modal-close {
+      position: sticky; top: 0;
+      display: flex; justify-content: flex-end;
+      padding: 14px 16px 0;
+      background: var(--surface); z-index: 1;
+    }
+    .modal-close button {
+      background: var(--border); border: none; color: var(--text);
+      width: 40px; height: 40px; border-radius: 50%;
+      cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-inner {
+      padding: 16px 20px 24px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 16px;
+    }
+    .modal-img {
+      width: 220px; border-radius: 10px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    .modal-title {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 800; font-size: 1.5rem; text-align: center;
+    }
+    .modal-meta {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; width: 100%;
+    }
+    .meta-item { background: var(--bg); border-radius: 10px; padding: 10px 14px; }
+    .meta-label {
+      font-size: 0.7rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px;
+    }
+    .meta-value { font-family: 'Exo 2', sans-serif; font-weight: 600; font-size: 0.9rem; }
+
+    /* ── Owned shimmer effect ─────────────────────────────── */
+    .pcard-img-wrap {
+      position: relative;
+      overflow: hidden;
+      display: block;
+    }
+    /* The holographic sweep overlay */
+    .pcard-img-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        115deg,
+        transparent 0%,
+        transparent 25%,
+        rgba(255,255,255,0.08) 35%,
+        rgba(160,100,255,0.18) 42%,
+        rgba(80,180,255,0.22) 48%,
+        rgba(100,255,180,0.18) 54%,
+        rgba(255,220,80,0.18) 60%,
+        rgba(255,100,120,0.15) 66%,
+        rgba(255,255,255,0.08) 75%,
+        transparent 85%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .pcard.owned .pcard-img-wrap::after {
+      opacity: 1;
+      animation: holo-sweep 3s linear infinite;
+    }
+    @keyframes holo-sweep {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    /* Subtle gold border glow on owned cards */
+    .pcard.owned {
+      box-shadow: 0 0 0 1px rgba(245,197,24,0.4), 0 4px 20px rgba(245,197,24,0.1);
+    }
+    @media (hover: hover) {
+      .pcard.owned:hover {
+        box-shadow: 0 4px 28px rgba(245,197,24,0.3);
+      }
+    }
+
+    /* Owned star badge */
+    .owned-badge {
+      position: absolute; top: 8px; left: 8px;
+      width: 22px; height: 22px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #000;
+      z-index: 2;
+    }
+
+    /* Owned toggle button (in footer) */
+    .owned-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--muted);
+      font-size: 0.72rem; font-weight: 600;
+      padding: 6px 10px; min-height: 32px;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .owned-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .owned-btn.is-owned {
+      background: rgba(245,197,24,0.12);
+      border-color: var(--accent); color: var(--accent);
+    }
+
+    /* Owned toggle button in modal */
+    .modal-owned-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.9rem;
+      padding: 12px; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .modal-owned-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .modal-owned-btn.is-owned {
+      background: rgba(245,197,24,0.1);
+      border-color: var(--accent); color: var(--accent);
+    }
+
+    /* ── Share button ─────────────────────────────────────── */
+    .modal-share-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.9rem;
+      padding: 12px; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      text-decoration: none;
+    }
+    .modal-share-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .modal-share-btn.copied { border-color: #3ddc84; color: #3ddc84; }
+
+    /* ── Add-to-collection section in modal ───────────────── */
+    .modal-add-section { width: 100%; }
+    .modal-add-label {
+      font-size: 0.72rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-bottom: 10px;
+      font-family: 'Exo 2', sans-serif; font-weight: 700;
+    }
+    .modal-col-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .modal-col-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border-radius: 10px;
+      padding: 10px 14px;
+    }
+    .modal-col-row-name {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.9rem;
+    }
+    .modal-col-row-count {
+      font-size: 0.75rem; color: var(--muted); margin-top: 2px;
+    }
+    .modal-add-btn {
+      background: var(--accent); border: none;
+      border-radius: 8px; color: #000;
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700; font-size: 0.82rem;
+      padding: 7px 14px; cursor: pointer;
+      transition: opacity 0.15s; white-space: nowrap;
+    }
+    .modal-add-btn:hover { opacity: 0.85; }
+    .modal-add-btn.in-col {
+      background: rgba(61,220,132,0.15);
+      color: #3ddc84;
+    }
+
+    .attacks-list { width: 100%; }
+    .attacks-list h4 {
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 8px;
+    }
+    .attack-item {
+      background: var(--bg); border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 8px;
+    }
+    .attack-name {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700; font-size: 0.88rem;
+      display: flex; justify-content: space-between;
+    }
+    .attack-damage { color: var(--accent2); }
+    .attack-text { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── Inline name/rename input ─────────────────────────── */
+    .inline-input {
+      background: var(--bg); border: 1px solid var(--accent);
+      border-radius: 8px; color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600; font-size: 0.82rem;
+      padding: 5px 10px; outline: none;
+      width: 130px;
+    }
+
+    /* ── Context menu (rename/delete) ─────────────────────── */
+    .ctx-menu {
+      position: fixed;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 6px;
+      z-index: 300; min-width: 140px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    }
+    .ctx-menu button {
+      display: flex; align-items: center; gap: 8px;
+      background: none; border: none;
+      color: var(--text); font-size: 0.85rem;
+      padding: 8px 12px; width: 100%;
+      text-align: left; border-radius: 6px;
+      cursor: pointer; transition: background 0.1s;
+    }
+    .ctx-menu button:hover { background: var(--border); }
+    .ctx-menu button.danger { color: var(--accent2); }
+
+    /* ── Mobile ───────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      :root { --card-w: 148px; }
+      .collection-count { display: none; }
+      .logo { font-size: 1rem; }
+      .logo img { width: 30px; height: 30px; }
+      .search-row { flex-wrap: wrap; }
+      .search-wrap { flex: 1 1 100%; }
+      button.search-btn { flex: 1 1 100%; padding: 12px; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal {
+        border-radius: 20px 20px 0 0;
+        max-height: 92dvh; width: 100%;
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .modal-img { width: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/468.png" alt="Togekiss" />
+    Poké<span>TCG</span>
+  </div>
+  <div class="tab-bar">
+    <button class="active" onclick="switchTab('search')">Search</button>
+    <button onclick="switchTab('collection')">Collection</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="collection-count"><strong id="col-count">0</strong> cards</div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
+  </div>
+</header>
+
+<main>
+  <!-- Search tab -->
+  <div id="tab-search">
+    <div class="search-mode-row">
+      <button class="mode-btn active" id="mode-name" onclick="setSearchMode('name')">By Name</button>
+      <button class="mode-btn" id="mode-artist" onclick="setSearchMode('artist')">By Artist</button>
+    </div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="search" id="search-input" placeholder="Search by Pokémon name…"
+               autocorrect="off" autocapitalize="none" spellcheck="false"
+               onkeydown="if(event.key==='Enter') doSearch()" />
+      </div>
+      <button class="random-btn" id="random-btn" onclick="randomCard()" title="Show a random card">🎲</button>
+      <button class="search-btn" id="search-btn" onclick="doSearch()">Search</button>
+    </div>
+    <div class="filter-row" id="type-filters">
+      <span>Type:</span>
+    </div>
+    <div id="results-toolbar" style="display:none" class="results-toolbar">
+      <span id="results-count" class="results-count"></span>
+      <button class="add-all-btn" id="add-all-btn" onclick="addAllToCollection()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span id="add-all-label">Add all to collection</span>
+      </button>
+    </div>
+    <div id="search-results"></div>
+    <div class="pagination hidden" id="pagination">
+      <button id="prev-btn" onclick="changePage(-1)">← Prev</button>
+      <span class="page-info" id="page-info"></span>
+      <button id="next-btn" onclick="changePage(1)">Next →</button>
+    </div>
+  </div>
+
+  <!-- Collection tab -->
+  <div id="tab-collection" style="display:none">
+    <div class="collections-bar" id="collections-bar"></div>
+    <div id="collection-grid"></div>
+  </div>
+</main>
+
+<!-- Card detail modal -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModalIfBg(event)">
+  <div class="modal" id="modal">
+    <div class="modal-close"><button onclick="closeModal()">✕</button></div>
+    <div class="modal-inner" id="modal-inner"></div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu" style="display:none"></div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────
+  const API      = 'https://api.pokemontcg.io/v2';
+  const API_KEY  = '';
+  const PAGE_SIZE = 20;
+
+  // ── Collections state ────────────────────────────────────────
+  // Structure: { collections: [{id, name, cards: {cardId: card}}], activeId }
+  let store      = loadStore();
+  let activeColId = store.activeId;
+
+  // ── Owned state ──────────────────────────────────────────────
+  // Separate from collections — a card can be owned without being in any list
+  let owned = loadOwned(); // Set of card IDs
+
+  function activeCol() { return store.collections.find(c => c.id === activeColId); }
+  function activeCards() { return activeCol()?.cards || {}; }
+
+  // ── Search state ─────────────────────────────────────────────
+  let currentTab   = 'search';
+  let currentQuery = '';
+  let currentType  = '';
+  let currentPage  = 1;
+  let totalCards   = 0;
+  let searchMode   = 'name';
+  let lastResults  = [];
+
+  const TYPES = ['Colorless','Darkness','Dragon','Fairy','Fighting','Fire',
+                 'Grass','Lightning','Metal','Psychic','Water'];
+
+  // ── Theme ─────────────────────────────────────────────────────
+  function applyTheme(t) {
+    document.documentElement.classList.toggle('light', t === 'light');
+    document.getElementById('theme-toggle').textContent = t === 'light' ? '🌙' : '☀️';
+  }
+  function toggleTheme() {
+    const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+    localStorage.setItem('ptcg_theme', next);
+    applyTheme(next);
+  }
+  const savedTheme = localStorage.getItem('ptcg_theme') ||
+    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  applyTheme(savedTheme);
+
+  // ── Init ──────────────────────────────────────────────────────
+  renderTypeFilters();
+  updateCount();
+  showSearchState('idle');
+
+  function renderTypeFilters() {
+    const row = document.getElementById('type-filters');
+    TYPES.forEach(t => {
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = t;
+      chip.onclick = () => toggleType(t, chip);
+      row.appendChild(chip);
+    });
+  }
+
+  function toggleType(t, chip) {
+    if (currentType === t) {
+      currentType = ''; chip.classList.remove('active');
+    } else {
+      document.querySelectorAll('#type-filters .chip').forEach(c => c.classList.remove('active'));
+      currentType = t; chip.classList.add('active');
+    }
+    if (currentQuery) { currentPage = 1; doSearch(); }
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-search').style.display     = tab === 'search'     ? '' : 'none';
+    document.getElementById('tab-collection').style.display = tab === 'collection' ? '' : 'none';
+    document.querySelectorAll('.tab-bar button').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'search') || (i === 1 && tab === 'collection'));
+    });
+    if (tab === 'collection') renderCollectionTab();
+  }
+
+  // ── Search ────────────────────────────────────────────────────
+  function setSearchMode(mode) {
+    searchMode = mode;
+    document.getElementById('mode-name').classList.toggle('active', mode === 'name');
+    document.getElementById('mode-artist').classList.toggle('active', mode === 'artist');
+    document.getElementById('search-input').placeholder =
+      mode === 'name' ? 'Search by Pokémon name…' : 'Search by artist name…';
+    document.getElementById('type-filters').style.display = mode === 'artist' ? 'none' : '';
+    currentQuery = ''; lastResults = [];
+    showSearchState('idle');
+    document.getElementById('pagination').classList.add('hidden');
+  }
+
+  async function doSearch() {
+    const input = document.getElementById('search-input');
+    const q = input.value.trim();
+    if (!q) return;
+    input.blur();
+    currentQuery = q; currentPage = 1;
+    await fetchCards();
+  }
+
+  async function randomCard() {
+    const btn = document.getElementById('random-btn');
+    const searchBtn = document.getElementById('search-btn');
+    btn.disabled = true;
+    searchBtn.disabled = true;
+    btn.classList.add('spinning');
+    showSearchState('loading');
+    document.getElementById('pagination').classList.add('hidden');
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (API_KEY) headers['X-Api-Key'] = API_KEY;
+
+    try {
+      // First: get total card count
+      const countRes = await fetch(
+        `${API}/cards?pageSize=1&page=1`,
+        { headers }
+      );
+      if (!countRes.ok) throw new Error(`HTTP ${countRes.status}`);
+      const countData = await countRes.json();
+      const total = countData.totalCount || 10000;
+
+      // Pick a random page out of all cards
+      const randomPage = Math.floor(Math.random() * total) + 1;
+      const cardRes = await fetch(
+        `${API}/cards?pageSize=1&page=${randomPage}`,
+        { headers }
+      );
+      if (!cardRes.ok) throw new Error(`HTTP ${cardRes.status}`);
+      const cardData = await cardRes.json();
+      const card = cardData.data?.[0];
+      if (!card) throw new Error('No card returned');
+
+      // Show it — clear search input so it's obvious this is random
+      document.getElementById('search-input').value = '';
+      currentQuery = '';
+      lastResults = [card];
+      renderResults([card]);
+    } catch (e) {
+      showSearchState('error', e.message);
+    } finally {
+      btn.disabled = false;
+      searchBtn.disabled = false;
+      // Remove spinning class after animation completes
+      setTimeout(() => btn.classList.remove('spinning'), 500);
+    }
+  }
+
+  async function changePage(dir) {
+    currentPage += dir;
+    await fetchCards();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function fetchCards() {
+    const btn = document.getElementById('search-btn');
+    btn.disabled = true;
+    showSearchState('loading');
+
+    let query = searchMode === 'artist'
+      ? `artist:"${currentQuery}"`
+      : `name:${currentQuery}*`;
+    if (searchMode === 'name' && currentType) query += ` types:${currentType}`;
+
+    const params = new URLSearchParams({ q: query, page: currentPage, pageSize: PAGE_SIZE, orderBy: 'name' });
+    const headers = { 'Content-Type': 'application/json' };
+    if (API_KEY) headers['X-Api-Key'] = API_KEY;
+
+    try {
+      const res  = await fetch(`${API}/cards?${params}`, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      totalCards  = data.totalCount || 0;
+      lastResults = data.data || [];
+      renderResults(lastResults);
+      renderPagination();
+    } catch (e) {
+      showSearchState('error', e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function showSearchState(state, msg) {
+    const el = document.getElementById('search-results');
+    document.getElementById('pagination').classList.toggle('hidden', state !== 'results');
+    if (state !== 'results') {
+      document.getElementById('results-toolbar').style.display = 'none';
+    }
+    if (state === 'idle') {
+      el.innerHTML = `<div class="state-msg"><div class="big">🃏</div>
+        <h3>Search for any Pokémon card</h3>
+        <p>Search by name (e.g. "Charizard") or switch to search by artist</p></div>`;
+    } else if (state === 'loading') {
+      el.innerHTML = '<div class="spinner"></div>';
+    } else if (state === 'error') {
+      el.innerHTML = `<div class="state-msg"><div class="big">⚠️</div>
+        <h3>Something went wrong</h3><p>${msg || 'Check your connection and try again.'}</p></div>`;
+    } else if (state === 'empty') {
+      el.innerHTML = `<div class="state-msg"><div class="big">🔍</div>
+        <h3>No cards found</h3>
+        <p>${searchMode === 'artist' ? 'Try a different artist name.' : 'Try a different name or remove the type filter.'}</p></div>`;
+    }
+  }
+
+  function renderResults(cards) {
+    if (!cards.length) { showSearchState('empty'); return; }
+    const el = document.getElementById('search-results');
+    el.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'card-grid';
+    cards.forEach(card => grid.appendChild(buildCard(card)));
+    el.appendChild(grid);
+    document.getElementById('pagination').classList.remove('hidden');
+
+    // Show toolbar
+    const toolbar = document.getElementById('results-toolbar');
+    toolbar.style.display = 'flex';
+    const countEl = document.getElementById('results-count');
+    const label = totalCards > PAGE_SIZE
+      ? `<strong>${totalCards.toLocaleString()}</strong> cards found`
+      : `<strong>${cards.length}</strong> card${cards.length !== 1 ? 's' : ''} found`;
+    countEl.innerHTML = label;
+
+    // Reset add-all button
+    const addBtn = document.getElementById('add-all-btn');
+    addBtn.disabled = false;
+    addBtn.classList.remove('done');
+    document.getElementById('add-all-label').textContent = 'Add all to collection';
+  }
+
+  async function addAllToCollection() {
+    const btn = document.getElementById('add-all-btn');
+    const labelEl = document.getElementById('add-all-label');
+
+    // Pick which collection via a prompt listing them
+    const colNames = store.collections.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
+    const input = prompt(`Add all results to which collection?\n\n${colNames}\n\nEnter a number:`);
+    if (!input) return;
+    const idx = parseInt(input.trim(), 10) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= store.collections.length) {
+      alert('Invalid selection.');
+      return;
+    }
+    const targetCol = store.collections[idx];
+
+    btn.disabled = true;
+
+    // If results fit on one page, just use lastResults
+    if (totalCards <= PAGE_SIZE || !currentQuery) {
+      lastResults.forEach(card => { targetCol.cards[card.id] = card; });
+      saveStore(); updateCount();
+      btn.classList.add('done');
+      labelEl.textContent = `✓ Added ${lastResults.length} cards`;
+      if (currentTab === 'collection') renderCollectionTab();
+      return;
+    }
+
+    // Otherwise fetch all pages
+    const totalPages = Math.ceil(totalCards / PAGE_SIZE);
+    let fetched = 0;
+    let added = 0;
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (API_KEY) headers['X-Api-Key'] = API_KEY;
+
+    let query = searchMode === 'artist'
+      ? `artist:"${currentQuery}"`
+      : `name:${currentQuery}*`;
+    if (searchMode === 'name' && currentType) query += ` types:${currentType}`;
+
+    try {
+      for (let page = 1; page <= totalPages; page++) {
+        labelEl.textContent = `Fetching page ${page}/${totalPages}…`;
+        const params = new URLSearchParams({ q: query, page, pageSize: PAGE_SIZE, orderBy: 'name' });
+        const res = await fetch(`${API}/cards?${params}`, { headers });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        (data.data || []).forEach(card => {
+          targetCol.cards[card.id] = card;
+          added++;
+        });
+        fetched += (data.data || []).length;
+      }
+      saveStore(); updateCount();
+      btn.classList.add('done');
+      labelEl.textContent = `✓ Added ${added} cards`;
+      if (currentTab === 'collection') renderCollectionTab();
+    } catch (e) {
+      labelEl.textContent = 'Add all to collection';
+      btn.disabled = false;
+      alert(`Failed to fetch all cards: ${e.message}`);
+    }
+  }
+
+  function renderPagination() {
+    const totalPages = Math.ceil(totalCards / PAGE_SIZE);
+    document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+    document.getElementById('prev-btn').disabled = currentPage <= 1;
+    document.getElementById('next-btn').disabled = currentPage >= totalPages;
+  }
+
+  // ── Collections tab ───────────────────────────────────────────
+  function renderCollectionTab() {
+    renderCollectionsBar();
+    renderCollectionGrid();
+  }
+
+  function renderCollectionsBar() {
+    const bar = document.getElementById('collections-bar');
+    bar.innerHTML = '';
+
+    store.collections.forEach(col => {
+      const tab = document.createElement('div');
+      tab.className = 'col-tab' + (col.id === activeColId ? ' active' : '');
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'col-tab-name';
+      nameSpan.textContent = col.name;
+
+      const countSpan = document.createElement('span');
+      countSpan.className = 'col-tab-count';
+      countSpan.textContent = Object.keys(col.cards).length;
+
+      tab.appendChild(nameSpan);
+      tab.appendChild(countSpan);
+      tab.onclick = () => { activeColId = col.id; store.activeId = col.id; saveStore(); renderCollectionTab(); };
+
+      // ⋯ menu button
+      const menuBtn = document.createElement('button');
+      menuBtn.className = 'col-menu-btn';
+      menuBtn.textContent = '⋯';
+      menuBtn.onclick = e => { e.stopPropagation(); showColMenu(e, col); };
+      tab.appendChild(menuBtn);
+
+      bar.appendChild(tab);
+    });
+
+    // New collection button
+    const newBtn = document.createElement('button');
+    newBtn.className = 'new-col-btn';
+    newBtn.innerHTML = '＋ New list';
+    newBtn.onclick = () => createCollection();
+    bar.appendChild(newBtn);
+  }
+
+  function renderCollectionGrid() {
+    const el = document.getElementById('collection-grid');
+    const col = activeCol();
+    if (!col) { el.innerHTML = ''; return; }
+    const cards = Object.values(col.cards);
+    if (!cards.length) {
+      el.innerHTML = `<div class="state-msg"><div class="big">📦</div>
+        <h3>"${col.name}" is empty</h3>
+        <p>Search for cards and tap <em>+ Add</em> to add them here.</p></div>`;
+      return;
+    }
+    el.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'card-grid';
+    cards.forEach(card => grid.appendChild(buildCard(card)));
+    el.appendChild(grid);
+  }
+
+  // ── Collection management ─────────────────────────────────────
+  function createCollection() {
+    const name = prompt('Name your new collection:')?.trim();
+    if (!name) return;
+    const id = 'col_' + Date.now();
+    store.collections.push({ id, name, cards: {} });
+    activeColId = id;
+    store.activeId = id;
+    saveStore();
+    updateCount();
+    renderCollectionTab();
+  }
+
+  function renameCollection(col) {
+    const name = prompt('Rename collection:', col.name)?.trim();
+    if (!name) return;
+    col.name = name;
+    saveStore();
+    renderCollectionTab();
+  }
+
+  function deleteCollection(col) {
+    if (store.collections.length === 1) {
+      alert('You need at least one collection.');
+      return;
+    }
+    if (!confirm(`Delete "${col.name}" and all its cards?`)) return;
+    store.collections = store.collections.filter(c => c.id !== col.id);
+    if (activeColId === col.id) {
+      activeColId = store.collections[0].id;
+      store.activeId = activeColId;
+    }
+    saveStore();
+    updateCount();
+    renderCollectionTab();
+  }
+
+  function showColMenu(e, col) {
+    const menu = document.getElementById('ctx-menu');
+    menu.innerHTML = '';
+
+    const renameBtn = document.createElement('button');
+    renameBtn.innerHTML = '✏️ Rename';
+    renameBtn.onclick = () => { hideCtxMenu(); renameCollection(col); };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'danger';
+    deleteBtn.innerHTML = '🗑 Delete';
+    deleteBtn.onclick = () => { hideCtxMenu(); deleteCollection(col); };
+
+    menu.appendChild(renameBtn);
+    menu.appendChild(deleteBtn);
+
+    // Position near the button
+    const rect = e.target.getBoundingClientRect();
+    menu.style.display = 'block';
+    const menuW = 150, menuH = 80;
+    let top  = rect.bottom + 6;
+    let left = rect.left - menuW + rect.width;
+    if (left < 8) left = 8;
+    if (top + menuH > window.innerHeight - 8) top = rect.top - menuH - 6;
+    menu.style.top  = top  + 'px';
+    menu.style.left = left + 'px';
+
+    setTimeout(() => document.addEventListener('click', hideCtxMenu, { once: true }), 0);
+  }
+
+  function hideCtxMenu() {
+    document.getElementById('ctx-menu').style.display = 'none';
+  }
+
+  // ── Card DOM ──────────────────────────────────────────────────
+  function buildCard(card) {
+    const inCol   = !!activeCards()[card.id];
+    const isOwned = owned.has(card.id);
+    const wrap = document.createElement('div');
+    wrap.className = 'pcard' + (inCol ? ' in-collection' : '') + (isOwned ? ' owned' : '');
+    wrap.onclick = () => openModal(card);
+
+    // Owned star badge (top-left)
+    if (isOwned) {
+      const ob = document.createElement('div');
+      ob.className = 'owned-badge'; ob.textContent = '✦';
+      wrap.appendChild(ob);
+    }
+
+    // In-collection check badge (top-right)
+    if (inCol) {
+      const badge = document.createElement('div');
+      badge.className = 'in-collection-badge'; badge.textContent = '✓';
+      wrap.appendChild(badge);
+    }
+
+    // Image wrapped for shimmer overlay
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'pcard-img-wrap';
+    const img = document.createElement('img');
+    img.className = 'pcard-img loading';
+    img.alt = card.name; img.loading = 'lazy';
+    img.onload  = () => img.classList.remove('loading');
+    img.onerror = () => { img.classList.remove('loading'); img.style.opacity = '0.3'; };
+    img.src = card.images?.small || '';
+    imgWrap.appendChild(img);
+    wrap.appendChild(imgWrap);
+
+    const body = document.createElement('div');
+    body.className = 'pcard-body';
+    body.innerHTML = `<div class="pcard-name">${card.name}</div>
+      <div class="pcard-set">${card.set?.name || '—'}</div>`;
+    wrap.appendChild(body);
+
+    const footer = document.createElement('div');
+    footer.className = 'pcard-footer';
+    footer.innerHTML = `<span class="rarity-badge">${card.rarity || '—'}</span>`;
+
+    // Owned button
+    const ownedBtn = document.createElement('button');
+    ownedBtn.className = 'owned-btn' + (isOwned ? ' is-owned' : '');
+    ownedBtn.title = isOwned ? 'Mark as not owned' : 'Mark as owned';
+    ownedBtn.textContent = isOwned ? '✦' : '✦';
+    ownedBtn.onclick = e => { e.stopPropagation(); toggleOwned(card.id, wrap, ownedBtn); };
+    footer.appendChild(ownedBtn);
+
+    // Collect button
+    const btn = document.createElement('button');
+    btn.className = 'collect-btn' + (inCol ? ' collected' : '');
+    btn.textContent = inCol ? '✓ Added' : '+ Add';
+    btn.onclick = e => { e.stopPropagation(); toggleCollect(card, btn, wrap); };
+    footer.appendChild(btn);
+
+    wrap.appendChild(footer);
+    return wrap;
+  }
+
+  function toggleOwned(cardId, wrap, btn) {
+    if (owned.has(cardId)) {
+      owned.delete(cardId);
+      wrap.classList.remove('owned');
+      btn.classList.remove('is-owned');
+      btn.title = 'Mark as owned';
+      wrap.querySelector('.owned-badge')?.remove();
+    } else {
+      owned.add(cardId);
+      wrap.classList.add('owned');
+      btn.classList.add('is-owned');
+      btn.title = 'Mark as not owned';
+      if (!wrap.querySelector('.owned-badge')) {
+        const ob = document.createElement('div');
+        ob.className = 'owned-badge'; ob.textContent = '✦';
+        wrap.prepend(ob);
+      }
+    }
+    saveOwned();
+    // Refresh modal owned button if open
+    const modalBtn = document.getElementById('modal-owned-btn');
+    if (modalBtn && modalBtn.dataset.cardId === cardId) {
+      const nowOwned = owned.has(cardId);
+      modalBtn.classList.toggle('is-owned', nowOwned);
+      modalBtn.innerHTML = ownedBtnHtml(nowOwned);
+    }
+  }
+
+  function toggleCollect(card, btn, wrap) {
+    const col = activeCol();
+    if (!col) return;
+    if (col.cards[card.id]) {
+      delete col.cards[card.id];
+      btn.textContent = '+ Add'; btn.classList.remove('collected');
+      wrap.classList.remove('in-collection');
+      wrap.querySelector('.in-collection-badge')?.remove();
+    } else {
+      col.cards[card.id] = card;
+      btn.textContent = '✓ Added'; btn.classList.add('collected');
+      wrap.classList.add('in-collection');
+      if (!wrap.querySelector('.in-collection-badge')) {
+        const badge = document.createElement('div');
+        badge.className = 'in-collection-badge'; badge.textContent = '✓';
+        wrap.prepend(badge);
+      }
+    }
+    saveStore(); updateCount();
+    if (currentTab === 'collection') renderCollectionsBar();
+  }
+
+  function ownedBtnHtml(isOwned) {
+    return isOwned
+      ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Owned`
+      : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Mark as owned`;
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────
+  function openModal(card) {
+    const inner = document.getElementById('modal-inner');
+    const attacks = (card.attacks || []).map(a => `
+      <div class="attack-item">
+        <div class="attack-name"><span>${a.name}</span><span class="attack-damage">${a.damage || ''}</span></div>
+        ${a.text ? `<div class="attack-text">${a.text}</div>` : ''}
+      </div>`).join('');
+
+    // Build per-collection add rows
+    const colRows = store.collections.map(col => {
+      const inThis = !!col.cards[card.id];
+      return `<div class="modal-col-row">
+        <div>
+          <div class="modal-col-row-name">${col.name}</div>
+          <div class="modal-col-row-count">${Object.keys(col.cards).length} card${Object.keys(col.cards).length !== 1 ? 's' : ''}</div>
+        </div>
+        <button class="modal-add-btn ${inThis ? 'in-col' : ''}"
+                onclick="toggleModalCollect(${JSON.stringify(card).replace(/"/g,'&quot;')}, '${col.id}')">
+          ${inThis ? '✓ Added' : '+ Add'}
+        </button>
+      </div>`;
+    }).join('');
+
+    const isOwned = owned.has(card.id);
+
+    inner.innerHTML = `
+      <img class="modal-img" src="${card.images?.large || card.images?.small || ''}" alt="${card.name}" />
+      <div class="modal-title">${card.name}</div>
+      <div class="modal-meta">
+        <div class="meta-item"><div class="meta-label">Set</div><div class="meta-value">${card.set?.name || '—'}</div></div>
+        <div class="meta-item"><div class="meta-label">Rarity</div><div class="meta-value">${card.rarity || '—'}</div></div>
+        <div class="meta-item"><div class="meta-label">HP</div><div class="meta-value">${card.hp || '—'}</div></div>
+        <div class="meta-item">
+          <div class="meta-label">Artist</div>
+          <div class="meta-value">${card.artist
+            ? `<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:var(--accent)"
+                     onclick="searchByArtist('${card.artist.replace(/'/g,"\\'")}')">${card.artist}</span>`
+            : '—'}</div>
+        </div>
+      </div>
+      ${attacks ? `<div class="attacks-list"><h4>Attacks</h4>${attacks}</div>` : ''}
+      <button class="modal-owned-btn ${isOwned ? 'is-owned' : ''}" id="modal-owned-btn"
+              data-card-id="${card.id}"
+              onclick="toggleModalOwned('${card.id}')">
+        ${ownedBtnHtml(isOwned)}
+      </button>
+      <a class="modal-share-btn"
+         href="${card.tcgplayer?.url || `https://www.tcgplayer.com/search/pokemon/product?q=${encodeURIComponent(card.name)}&view=grid`}"
+         target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        View on TCGPlayer
+      </a>
+      <div class="modal-add-section">
+        <div class="modal-add-label">Add to collection</div>
+        <div class="modal-col-list">${colRows}</div>
+      </div>`;
+
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function toggleModalCollect(card, colId) {
+    const col = store.collections.find(c => c.id === colId);
+    if (!col) return;
+    if (col.cards[card.id]) { delete col.cards[card.id]; }
+    else { col.cards[card.id] = card; }
+    saveStore(); updateCount();
+    openModal(card); // re-render modal state
+  }
+
+  function toggleModalOwned(cardId) {
+    const btn = document.getElementById('modal-owned-btn');
+    if (owned.has(cardId)) {
+      owned.delete(cardId);
+      btn?.classList.remove('is-owned');
+      if (btn) btn.innerHTML = ownedBtnHtml(false);
+    } else {
+      owned.add(cardId);
+      btn?.classList.add('is-owned');
+      if (btn) btn.innerHTML = ownedBtnHtml(true);
+    }
+    saveOwned();
+    // Update any visible card in the grid
+    if (lastResults.length) renderResults(lastResults);
+    else if (currentTab === 'collection') renderCollectionGrid();
+  }
+
+  function searchByArtist(artist) {
+    closeModal();
+    setSearchMode('artist');
+    document.getElementById('search-input').value = artist;
+    currentQuery = artist; currentPage = 1;
+    switchTab('search');
+    fetchCards();
+  }
+
+  // ── Deep-link: open card from ?card=<id> on page load ─────────
+  async function checkDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const cardId = params.get('card');
+    if (!cardId) return;
+    // Clean URL without reloading
+    history.replaceState(null, '', window.location.pathname);
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (API_KEY) headers['X-Api-Key'] = API_KEY;
+      const res = await fetch(`${API}/cards/${encodeURIComponent(cardId)}`, { headers });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.data) openModal(data.data);
+    } catch {}
+  }
+  checkDeepLink();
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+    if (currentTab === 'collection') renderCollectionTab();
+    else if (lastResults.length) renderResults(lastResults);
+  }
+
+  function closeModalIfBg(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  }
+
+  // ── Persistence ───────────────────────────────────────────────
+  function loadStore() {
+    try {
+      const raw = localStorage.getItem('ptcg_store');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    // Migrate old single-collection data
+    try {
+      const old = JSON.parse(localStorage.getItem('ptcg_collection') || '{}');
+      const id = 'col_default';
+      return { collections: [{ id, name: 'My Collection', cards: old }], activeId: id };
+    } catch {}
+    const id = 'col_default';
+    return { collections: [{ id, name: 'My Collection', cards: {} }], activeId: id };
+  }
+
+  function saveStore() {
+    localStorage.setItem('ptcg_store', JSON.stringify(store));
+  }
+
+  function loadOwned() {
+    try {
+      const raw = localStorage.getItem('ptcg_owned');
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  }
+
+  function saveOwned() {
+    localStorage.setItem('ptcg_owned', JSON.stringify([...owned]));
+  }
+
+  function updateCount() {
+    const total = store.collections.reduce((n, c) => n + Object.keys(c.cards).length, 0);
+    document.getElementById('col-count').textContent = total;
+  }
+</script>
+</body>
+</html>
+    button.random-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1.2rem;
+      width: 46px; height: 46px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    button.random-btn:hover { border-color: var(--accent); transform: rotate(20deg); }
+    button.random-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    @keyframes dice-spin {
+      0%   { transform: rotate(0deg) scale(1); }
+      50%  { transform: rotate(180deg) scale(1.2); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
 
     /* ── Filter chips ─────────────────────────────────────── */
     .filter-row {
@@ -673,6 +2183,7 @@
                autocorrect="off" autocapitalize="none" spellcheck="false"
                onkeydown="if(event.key==='Enter') doSearch()" />
       </div>
+      <button class="random-btn" id="random-btn" onclick="randomCard()" title="Show a random card">🎲</button>
       <button class="search-btn" id="search-btn" onclick="doSearch()">Search</button>
     </div>
     <div class="filter-row" id="type-filters">
@@ -805,6 +2316,54 @@
     input.blur();
     currentQuery = q; currentPage = 1;
     await fetchCards();
+  }
+
+  async function randomCard() {
+    const btn = document.getElementById('random-btn');
+    const searchBtn = document.getElementById('search-btn');
+    btn.disabled = true;
+    searchBtn.disabled = true;
+    btn.classList.add('spinning');
+    showSearchState('loading');
+    document.getElementById('pagination').classList.add('hidden');
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (API_KEY) headers['X-Api-Key'] = API_KEY;
+
+    try {
+      // First: get total card count
+      const countRes = await fetch(
+        `${API}/cards?pageSize=1&page=1`,
+        { headers }
+      );
+      if (!countRes.ok) throw new Error(`HTTP ${countRes.status}`);
+      const countData = await countRes.json();
+      const total = countData.totalCount || 10000;
+
+      // Pick a random page out of all cards
+      const randomPage = Math.floor(Math.random() * total) + 1;
+      const cardRes = await fetch(
+        `${API}/cards?pageSize=1&page=${randomPage}`,
+        { headers }
+      );
+      if (!cardRes.ok) throw new Error(`HTTP ${cardRes.status}`);
+      const cardData = await cardRes.json();
+      const card = cardData.data?.[0];
+      if (!card) throw new Error('No card returned');
+
+      // Show it — clear search input so it's obvious this is random
+      document.getElementById('search-input').value = '';
+      currentQuery = '';
+      lastResults = [card];
+      renderResults([card]);
+    } catch (e) {
+      showSearchState('error', e.message);
+    } finally {
+      btn.disabled = false;
+      searchBtn.disabled = false;
+      // Remove spinning class after animation completes
+      setTimeout(() => btn.classList.remove('spinning'), 500);
+    }
   }
 
   async function changePage(dir) {

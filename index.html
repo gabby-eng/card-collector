@@ -198,6 +198,48 @@
     .chip.active { border-color: var(--accent); color: var(--accent); }
     .chip:hover:not(.active) { border-color: var(--muted); color: var(--text); }
 
+    /* ── Set picker ───────────────────────────────────────── */
+    .set-list {
+      margin-top: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .set-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .set-item:hover { border-color: var(--accent); }
+    .set-item.active { border-color: var(--accent); background: rgba(245,197,24,0.07); }
+    .set-item img {
+      width: 32px; height: 32px;
+      object-fit: contain; flex-shrink: 0;
+    }
+    .set-item-info { flex: 1; min-width: 0; }
+    .set-item-name {
+      font-family: 'Exo 2', sans-serif; font-weight: 600; font-size: 0.88rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .set-item-meta { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+    .set-item-count {
+      font-family: 'Exo 2', sans-serif; font-weight: 600;
+      font-size: 0.75rem; color: var(--muted); flex-shrink: 0;
+    }
+    .set-series-label {
+      font-size: 0.7rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 6px 4px 2px;
+      font-family: 'Exo 2', sans-serif;
+    }
+
     /* ── Results toolbar ──────────────────────────────────── */
     .results-toolbar {
       display: flex;
@@ -739,7 +781,9 @@
     <div class="search-mode-row">
       <button class="mode-btn active" id="mode-name" onclick="setSearchMode('name')">By Name</button>
       <button class="mode-btn" id="mode-artist" onclick="setSearchMode('artist')">By Artist</button>
+      <button class="mode-btn" id="mode-set" onclick="setSearchMode('set')">By Set</button>
     </div>
+    <div id="search-row-wrap">
     <div class="search-row">
       <div class="search-wrap">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -747,13 +791,28 @@
         </svg>
         <input type="search" id="search-input" placeholder="Search by Pokémon name…"
                autocorrect="off" autocapitalize="none" spellcheck="false"
-               onkeydown="if(event.key==='Enter') doSearch()" />
+               onkeydown="if(event.key==='Enter') searchMode==='set' ? fetchSetCards() : doSearch()" />
       </div>
       <button class="random-btn" id="random-btn" onclick="randomCard()" title="Show a random card">🎲</button>
-      <button class="search-btn" id="search-btn" onclick="doSearch()">Search</button>
+      <button class="search-btn" id="search-btn" onclick="searchMode==='set' ? fetchSetCards() : doSearch()">Search</button>
+    </div>
     </div>
     <div class="filter-row" id="type-filters">
       <span>Type:</span>
+    </div>
+
+    <!-- Set picker (shown in set mode) -->
+    <div id="set-picker-wrap" style="display:none;margin-bottom:20px;position:relative">
+      <div class="search-wrap" style="flex:1">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">
+          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        </svg>
+        <input type="search" id="set-filter-input" placeholder="Filter sets…"
+               autocorrect="off" autocapitalize="none" spellcheck="false"
+               style="padding-left:44px"
+               oninput="filterSetList()" />
+      </div>
+      <div id="set-list" class="set-list"></div>
     </div>
     <div id="results-toolbar" style="display:none" class="results-toolbar">
       <span id="results-count" class="results-count"></span>
@@ -884,16 +943,142 @@
   }
 
   // ── Search ────────────────────────────────────────────────────
+  let allSets = [];       // cached from API
+  let currentSetId = '';  // selected set ID
+
   function setSearchMode(mode) {
     searchMode = mode;
     document.getElementById('mode-name').classList.toggle('active', mode === 'name');
     document.getElementById('mode-artist').classList.toggle('active', mode === 'artist');
+    document.getElementById('mode-set').classList.toggle('active', mode === 'set');
+
+    const isSet    = mode === 'set';
+    const isArtist = mode === 'artist';
+
     document.getElementById('search-input').placeholder =
-      mode === 'name' ? 'Search by Pokémon name…' : 'Search by artist name…';
-    document.getElementById('type-filters').style.display = mode === 'artist' ? 'none' : '';
-    currentQuery = ''; lastResults = [];
+      isSet ? 'Search by Pokémon name within set…' :
+      isArtist ? 'Search by artist name…' : 'Search by Pokémon name…';
+
+    // Show/hide search row — hidden in set mode until a set is chosen
+    document.getElementById('type-filters').style.display  = (isArtist || isSet) ? 'none' : '';
+    document.getElementById('set-picker-wrap').style.display = isSet ? '' : 'none';
+    document.getElementById('search-row-wrap').style.display = isSet ? 'none' : '';
+
+    currentQuery = ''; currentSetId = ''; lastResults = [];
     showSearchState('idle');
     document.getElementById('pagination').classList.add('hidden');
+
+    if (isSet && allSets.length === 0) loadSets();
+    else if (isSet) renderSetList();
+  }
+
+  async function loadSets() {
+    document.getElementById('set-list').innerHTML =
+      '<div class="spinner" style="margin:20px auto;width:24px;height:24px;border-width:2px"></div>';
+    const headers = { 'Content-Type': 'application/json' };
+    if (API_KEY) headers['X-Api-Key'] = API_KEY;
+    try {
+      const res = await fetch(`${API}/sets?orderBy=-releaseDate&pageSize=250`, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      allSets = data.data || [];
+      renderSetList();
+    } catch (e) {
+      document.getElementById('set-list').innerHTML =
+        `<div style="color:var(--muted);font-size:0.85rem;padding:12px">Failed to load sets: ${e.message}</div>`;
+    }
+  }
+
+  function filterSetList() {
+    renderSetList(document.getElementById('set-filter-input').value.trim().toLowerCase());
+  }
+
+  function renderSetList(filter = '') {
+    const list = document.getElementById('set-list');
+    list.innerHTML = '';
+
+    const filtered = filter
+      ? allSets.filter(s => s.name.toLowerCase().includes(filter) || s.series.toLowerCase().includes(filter))
+      : allSets;
+
+    if (!filtered.length) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:12px">No sets match that filter.</div>';
+      return;
+    }
+
+    // Group by series
+    const groups = {};
+    filtered.forEach(s => {
+      if (!groups[s.series]) groups[s.series] = [];
+      groups[s.series].push(s);
+    });
+
+    Object.entries(groups).forEach(([series, sets]) => {
+      const label = document.createElement('div');
+      label.className = 'set-series-label';
+      label.textContent = series;
+      list.appendChild(label);
+
+      sets.forEach(set => {
+        const item = document.createElement('div');
+        item.className = 'set-item' + (set.id === currentSetId ? ' active' : '');
+        item.innerHTML = `
+          <img src="${set.images?.symbol || ''}" alt="${set.name}" onerror="this.style.display='none'" />
+          <div class="set-item-info">
+            <div class="set-item-name">${set.name}</div>
+            <div class="set-item-meta">${set.releaseDate || ''}</div>
+          </div>
+          <span class="set-item-count">${set.total ?? set.printedTotal ?? ''} cards</span>`;
+        item.onclick = () => selectSet(set);
+        list.appendChild(item);
+      });
+    });
+  }
+
+  function selectSet(set) {
+    currentSetId = set.id;
+    currentQuery = '';
+    currentPage  = 1;
+
+    // Show the name-within-set search bar
+    document.getElementById('search-row-wrap').style.display = '';
+    document.getElementById('search-input').placeholder = `Search within ${set.name}…`;
+    document.getElementById('search-input').value = '';
+
+    // Highlight selected set in list
+    document.querySelectorAll('.set-item').forEach(el => el.classList.remove('active'));
+    event?.currentTarget?.classList.add('active');
+
+    // Fetch all cards in this set immediately
+    fetchSetCards();
+  }
+
+  async function fetchSetCards() {
+    const btn = document.getElementById('search-btn');
+    btn.disabled = true;
+    showSearchState('loading');
+
+    const nameQ   = document.getElementById('search-input').value.trim();
+    let query = `set.id:${currentSetId}`;
+    if (nameQ) query += ` name:${nameQ}*`;
+
+    const params = new URLSearchParams({ q: query, page: currentPage, pageSize: PAGE_SIZE, orderBy: 'number' });
+    const headers = { 'Content-Type': 'application/json' };
+    if (API_KEY) headers['X-Api-Key'] = API_KEY;
+
+    try {
+      const res  = await fetch(`${API}/cards?${params}`, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      totalCards  = data.totalCount || 0;
+      lastResults = data.data || [];
+      renderResults(lastResults);
+      renderPagination();
+    } catch (e) {
+      showSearchState('error', e.message);
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   async function doSearch() {
@@ -955,7 +1140,8 @@
 
   async function changePage(dir) {
     currentPage += dir;
-    await fetchCards();
+    if (searchMode === 'set') await fetchSetCards();
+    else await fetchCards();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1116,6 +1302,8 @@
 
     let query = searchMode === 'artist'
       ? `artist:"${currentQuery}"`
+      : searchMode === 'set'
+      ? `set.id:${currentSetId}${currentQuery ? ` name:${currentQuery}*` : ''}`
       : `name:${currentQuery}*`;
     if (searchMode === 'name' && currentType) query += ` types:${currentType}`;
 

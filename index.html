@@ -83,6 +83,16 @@
   <!-- Collection tab -->
   <div id="tab-collection" style="display:none">
     <div class="collections-bar" id="collections-bar"></div>
+    <div class="col-toolbar">
+      <button class="hide-owned-btn" id="hide-owned-btn" onclick="toggleHideOwned()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+        Hide owned
+      </button>
+    </div>
     <div id="collection-grid"></div>
   </div>
 </main>
@@ -584,7 +594,36 @@
   }
 
   // ── Collections tab ───────────────────────────────────────────
+  let hideOwned = false;
+
+  function toggleHideOwned() {
+    hideOwned = !hideOwned;
+    const btn = document.getElementById('hide-owned-btn');
+    btn.classList.toggle('active', hideOwned);
+    btn.innerHTML = hideOwned
+      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+           <circle cx="12" cy="12" r="3"/>
+         </svg> Show owned`
+      : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+           <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+           <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+           <line x1="1" y1="1" x2="23" y2="23"/>
+         </svg> Hide owned`;
+    renderCollectionGrid();
+  }
+
   function renderCollectionTab() {
+    hideOwned = false;
+    const btn = document.getElementById('hide-owned-btn');
+    if (btn) {
+      btn.classList.remove('active');
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg> Hide owned`;
+    }
     renderCollectionsBar();
     renderCollectionGrid();
   }
@@ -631,11 +670,18 @@
     const el = document.getElementById('collection-grid');
     const col = activeCol();
     if (!col) { el.innerHTML = ''; return; }
-    const cards = Object.values(col.cards);
-    if (!cards.length) {
+    const allCards = Object.values(col.cards);
+    if (!allCards.length) {
       el.innerHTML = `<div class="state-msg"><div class="big">📦</div>
         <h3>"${col.name}" is empty</h3>
         <p>Search for cards and tap <em>+ Add</em> to add them here.</p></div>`;
+      return;
+    }
+    const cards = hideOwned ? allCards.filter(c => !owned.has(c.id)) : allCards;
+    if (!cards.length) {
+      el.innerHTML = `<div class="state-msg"><div class="big">✦</div>
+        <h3>You own everything here!</h3>
+        <p>All cards in this collection are marked as owned.</p></div>`;
       return;
     }
     el.innerHTML = '';

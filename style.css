@@ -334,6 +334,31 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
 }
 .new-col-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ── Collection toolbar (hide owned toggle) ───────────── */
+.col-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+.hide-owned-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 600; font-size: 0.78rem;
+  padding: 6px 14px; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.hide-owned-btn:hover { border-color: var(--muted); color: var(--text); }
+.hide-owned-btn.active {
+  background: rgba(245,197,24,0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Section heading ──────────────────────────────────── */
 .section-head {
   display: flex; align-items: center;

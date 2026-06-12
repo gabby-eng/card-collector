@@ -352,6 +352,40 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   border-color: var(--accent) !important;
 }
 
+/* ── Collection completion bar ────────────────────────── */
+.col-completion {
+  margin-bottom: 14px;
+}
+.col-completion-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.col-completion-pct {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.col-completion-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.col-completion-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3ddc84, #27ae60);
+  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.col-completion-fill.complete {
+  background: linear-gradient(90deg, var(--accent), #e6a817);
+}
+
 /* ── Collection toolbar (hide owned toggle) ───────────── */
 .col-toolbar {
   display: flex;

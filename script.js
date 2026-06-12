@@ -536,7 +536,33 @@ function renderCollectionTab() {
     </svg> Hide owned`;
   }
   renderCollectionsBar();
+  renderCompletionBar();
   renderCollectionGrid();
+}
+
+function renderCompletionBar() {
+  const wrap = document.getElementById('col-completion');
+  const col  = activeCol();
+  if (!col) { wrap.style.display = 'none'; return; }
+
+  const total = Object.keys(col.cards).length;
+  if (total === 0) { wrap.style.display = 'none'; return; }
+
+  const ownedCount = Object.keys(col.cards).filter(id => owned.has(id)).length;
+  const pct        = Math.round((ownedCount / total) * 100);
+  const complete   = ownedCount === total;
+
+  wrap.style.display = '';
+  document.getElementById('col-completion-label').textContent =
+    `${ownedCount} / ${total} owned`;
+  document.getElementById('col-completion-pct').textContent =
+    complete ? '✦ Complete!' : `${pct}%`;
+
+  const fill = document.getElementById('col-completion-fill');
+  requestAnimationFrame(() => {
+    fill.style.width = `${pct}%`;
+    fill.classList.toggle('complete', complete);
+  });
 }
 
 function renderCollectionsBar() {
@@ -922,6 +948,7 @@ function toggleOwned(cardId, wrap, btn) {
     modalBtn.classList.toggle('is-owned', nowOwned);
     modalBtn.innerHTML = ownedBtnHtml(nowOwned);
   }
+  if (currentTab === 'collection') renderCompletionBar();
 }
 
 function toggleCollect(card, btn, wrap) {
@@ -1042,6 +1069,7 @@ function toggleModalOwned(cardId) {
   // Update any visible card in the grid
   if (lastResults.length) renderResults(lastResults);
   else if (currentTab === 'collection') renderCollectionGrid();
+  if (currentTab === 'collection') renderCompletionBar();
 }
 
 function searchByArtist(artist) {

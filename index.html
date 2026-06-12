@@ -654,6 +654,30 @@
       width: 130px;
     }
 
+    /* ── Collection picker (Add all modal) ───────────────── */
+    .col-picker-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border-radius: 10px;
+      padding: 10px 14px; gap: 10px;
+      cursor: pointer; transition: border-color 0.12s;
+      border: 1px solid transparent;
+    }
+    .col-picker-row:hover { border-color: var(--accent); }
+    .col-picker-row-name {
+      font-family: 'Exo 2', sans-serif; font-weight: 600; font-size: 0.9rem;
+    }
+    .col-picker-row-count { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .col-picker-row-arrow { color: var(--muted); font-size: 1rem; flex-shrink: 0; }
+    .col-picker-new {
+      display: flex; align-items: center; gap: 10px;
+      background: none; border: 1px dashed var(--border);
+      border-radius: 10px; padding: 10px 14px;
+      color: var(--muted);
+      font-family: 'Exo 2', sans-serif; font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.15s; width: 100%; text-align: left;
+    }
+    .col-picker-new:hover { border-color: var(--accent); color: var(--accent); }
+
     /* ── Context menu (rename/delete) ─────────────────────── */
     .ctx-menu {
       position: fixed;
@@ -760,6 +784,18 @@
   <div class="modal" id="modal">
     <div class="modal-close"><button onclick="closeModal()">✕</button></div>
     <div class="modal-inner" id="modal-inner"></div>
+  </div>
+</div>
+
+<!-- Collection picker modal (for "Add all") -->
+<div class="modal-overlay hidden" id="col-picker-overlay" onclick="closeColPickerIfBg(event)">
+  <div class="modal" id="col-picker-modal" style="max-width:420px">
+    <div class="modal-close"><button onclick="closeColPicker()">✕</button></div>
+    <div style="padding:4px 20px 24px">
+      <div style="font-family:'Exo 2',sans-serif;font-weight:800;font-size:1.2rem;margin-bottom:6px">Add all to…</div>
+      <div id="col-picker-count" style="font-size:0.82rem;color:var(--muted);margin-bottom:16px"></div>
+      <div id="col-picker-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
   </div>
 </div>
 
@@ -1000,38 +1036,81 @@
     document.getElementById('add-all-label').textContent = 'Add all to collection';
   }
 
-  async function addAllToCollection() {
+  // ── Collection picker (Add all) ───────────────────────────────
+  let _pendingAddAll = false; // tracks whether a fetch is in progress
+
+  function addAllToCollection() {
+    // Build the picker list
+    const list = document.getElementById('col-picker-list');
+    list.innerHTML = '';
+
+    store.collections.forEach(col => {
+      const row = document.createElement('div');
+      row.className = 'col-picker-row';
+      row.innerHTML = `
+        <div>
+          <div class="col-picker-row-name">${col.name}</div>
+          <div class="col-picker-row-count">${Object.keys(col.cards).length} card${Object.keys(col.cards).length !== 1 ? 's' : ''}</div>
+        </div>
+        <span class="col-picker-row-arrow">→</span>`;
+      row.onclick = () => { closeColPicker(); doAddAll(col); };
+      list.appendChild(row);
+    });
+
+    // "Create new collection" option
+    const newBtn = document.createElement('button');
+    newBtn.className = 'col-picker-new';
+    newBtn.innerHTML = '<span style="font-size:1.1rem">＋</span> Create new collection';
+    newBtn.onclick = () => {
+      closeColPicker();
+      const name = prompt('Name your new collection:')?.trim();
+      if (!name) return;
+      const id = 'col_' + Date.now();
+      const col = { id, name, cards: {} };
+      store.collections.push(col);
+      activeColId = id;
+      store.activeId = id;
+      saveStore(); updateCount();
+      doAddAll(col);
+    };
+    list.appendChild(newBtn);
+
+    // Update subtitle
+    const cardWord = (totalCards > PAGE_SIZE ? totalCards : lastResults.length);
+    document.getElementById('col-picker-count').textContent =
+      `${cardWord.toLocaleString()} card${cardWord !== 1 ? 's' : ''} will be added`;
+
+    document.getElementById('col-picker-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeColPicker() {
+    document.getElementById('col-picker-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function closeColPickerIfBg(e) {
+    if (e.target === document.getElementById('col-picker-overlay')) closeColPicker();
+  }
+
+  async function doAddAll(targetCol) {
     const btn = document.getElementById('add-all-btn');
     const labelEl = document.getElementById('add-all-label');
-
-    // Pick which collection via a prompt listing them
-    const colNames = store.collections.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
-    const input = prompt(`Add all results to which collection?\n\n${colNames}\n\nEnter a number:`);
-    if (!input) return;
-    const idx = parseInt(input.trim(), 10) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= store.collections.length) {
-      alert('Invalid selection.');
-      return;
-    }
-    const targetCol = store.collections[idx];
-
     btn.disabled = true;
 
-    // If results fit on one page, just use lastResults
+    // Single page — use cached results
     if (totalCards <= PAGE_SIZE || !currentQuery) {
       lastResults.forEach(card => { targetCol.cards[card.id] = card; });
       saveStore(); updateCount();
       btn.classList.add('done');
-      labelEl.textContent = `✓ Added ${lastResults.length} cards`;
+      labelEl.textContent = `✓ Added ${lastResults.length} to "${targetCol.name}"`;
       if (currentTab === 'collection') renderCollectionTab();
       return;
     }
 
-    // Otherwise fetch all pages
+    // Multi-page — fetch everything
     const totalPages = Math.ceil(totalCards / PAGE_SIZE);
-    let fetched = 0;
     let added = 0;
-
     const headers = { 'Content-Type': 'application/json' };
     if (API_KEY) headers['X-Api-Key'] = API_KEY;
 
@@ -1047,15 +1126,11 @@
         const res = await fetch(`${API}/cards?${params}`, { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        (data.data || []).forEach(card => {
-          targetCol.cards[card.id] = card;
-          added++;
-        });
-        fetched += (data.data || []).length;
+        (data.data || []).forEach(card => { targetCol.cards[card.id] = card; added++; });
       }
       saveStore(); updateCount();
       btn.classList.add('done');
-      labelEl.textContent = `✓ Added ${added} cards`;
+      labelEl.textContent = `✓ Added ${added} to "${targetCol.name}"`;
       if (currentTab === 'collection') renderCollectionTab();
     } catch (e) {
       labelEl.textContent = 'Add all to collection';

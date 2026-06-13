@@ -1266,7 +1266,7 @@ function buildCard(card) {
   const body = document.createElement('div');
   body.className = 'pcard-body';
   body.innerHTML = `<div class="pcard-name">${card.name}</div>
-    <div class="pcard-set">${card.set?.name || '—'}</div>`;
+    <div class="pcard-set">${card.set?.name || '—'}${card.number ? ` · <span class="pcard-number">${card.number}/${card.set?.printedTotal ?? card.set?.total ?? '?'}</span>` : ''}</div>`;
   wrap.appendChild(body);
 
   const footer = document.createElement('div');
@@ -1382,6 +1382,7 @@ function openModal(card) {
     <div class="modal-title">${card.name}</div>
     <div class="modal-meta">
       <div class="meta-item"><div class="meta-label">Set</div><div class="meta-value">${card.set?.name || '—'}</div></div>
+      <div class="meta-item"><div class="meta-label">Number</div><div class="meta-value">${card.number ? `${card.number} / ${card.set?.printedTotal ?? card.set?.total ?? '?'}` : '—'}</div></div>
       <div class="meta-item"><div class="meta-label">Rarity</div><div class="meta-value">${card.rarity || '—'}</div></div>
       <div class="meta-item"><div class="meta-label">HP</div><div class="meta-value">${card.hp || '—'}</div></div>
       <div class="meta-item">

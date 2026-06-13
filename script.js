@@ -12,10 +12,14 @@ const JSONBIN_COLLECTION = ''; // optional: your JSONBin collection ID to organi
 
 // ── API cache ─────────────────────────────────────────────────
 // Caches responses in localStorage with a TTL.
-// Key format: "ptcg_cache:<url>"
-const CACHE_TTL_CARDS = 1000 * 60 * 60 * 24;      // 24 hours for card searches
-const CACHE_TTL_SETS  = 1000 * 60 * 60 * 24 * 7;  // 7 days for sets list
-const CACHE_MAX_KEYS  = 100; // max cache entries before pruning oldest
+// Card search caches also store the set's updatedAt timestamp so they
+// can be invalidated when a set is updated, rather than just on TTL expiry.
+const CACHE_TTL_CARDS     = 1000 * 60 * 60 * 24;      // 24h fallback TTL for card searches
+const CACHE_TTL_SETS      = 1000 * 60 * 60 * 24 * 7;  // 7 days for sets list
+const CACHE_MAX_KEYS      = 100;
+const SET_TIMESTAMPS_KEY  = 'ptcg_set_timestamps'; // { setId: updatedAt }
+const LAST_CHECK_KEY      = 'ptcg_last_staleness_check';
+const CHECK_INTERVAL      = 1000 * 60 * 60; // only re-check API staleness once per hour
 
 function cacheGet(key) {
   try {
@@ -27,30 +31,95 @@ function cacheGet(key) {
   } catch { return null; }
 }
 
-function cacheSet(key, data, ttl) {
+function cacheSet(key, data, ttl, meta = {}) {
   try {
-    // Prune oldest entries if over limit
     const allKeys = Object.keys(localStorage).filter(k => k.startsWith('ptcg_cache:'));
     if (allKeys.length >= CACHE_MAX_KEYS) {
       const entries = allKeys.map(k => {
         try { return { k, ts: JSON.parse(localStorage.getItem(k)).ts }; } catch { return { k, ts: 0 }; }
       }).sort((a, b) => a.ts - b.ts);
-      // Remove oldest 20%
       entries.slice(0, Math.ceil(CACHE_MAX_KEYS * 0.2)).forEach(e => localStorage.removeItem(e.k));
     }
-    localStorage.setItem('ptcg_cache:' + key, JSON.stringify({ ts: Date.now(), ttl, data }));
-  } catch {} // Silently fail if localStorage is full
+    localStorage.setItem('ptcg_cache:' + key, JSON.stringify({ ts: Date.now(), ttl, data, ...meta }));
+  } catch {}
 }
 
-async function cachedFetch(url, headers, ttl) {
+async function cachedFetch(url, headers, ttl, meta = {}) {
   const cached = cacheGet(url);
   if (cached) return cached;
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
-  cacheSet(url, data, ttl);
+  cacheSet(url, data, ttl, meta);
   return data;
 }
+
+// ── Smarter cache invalidation ────────────────────────────────
+// On startup, fetch only the most recently updated set and compare
+// its updatedAt against our stored timestamps. If anything changed,
+// purge stale card-search caches for that set and refresh the sets list.
+
+function getStoredTimestamps() {
+  try { return JSON.parse(localStorage.getItem(SET_TIMESTAMPS_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveTimestamps(ts) {
+  try { localStorage.setItem(SET_TIMESTAMPS_KEY, JSON.stringify(ts)); } catch {}
+}
+
+function invalidateCacheForSet(setId) {
+  // Remove any cached card search that mentions this set ID in its URL
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('ptcg_cache:') && k.includes(setId))
+    .forEach(k => localStorage.removeItem(k));
+  // Also bust the sets list cache so updated card counts appear
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('ptcg_cache:') && k.includes('/sets?'))
+    .forEach(k => localStorage.removeItem(k));
+}
+
+async function checkForSetUpdates() {
+  // Rate-limit: only check once per hour
+  const lastCheck = parseInt(localStorage.getItem(LAST_CHECK_KEY) || '0', 10);
+  if (Date.now() - lastCheck < CHECK_INTERVAL) return;
+  localStorage.setItem(LAST_CHECK_KEY, Date.now());
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (API_KEY) headers['X-Api-Key'] = API_KEY;
+
+  try {
+    // Fetch only the single most recently updated set — tiny payload
+    const res = await fetch(
+      `${API}/sets?orderBy=-updatedAt&pageSize=10`,
+      { headers }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    const sets = data.data || [];
+    const stored = getStoredTimestamps();
+    let changed = false;
+
+    sets.forEach(set => {
+      if (stored[set.id] && stored[set.id] !== set.updatedAt) {
+        // This set was updated since we last cached it — invalidate its cache
+        invalidateCacheForSet(set.id);
+        console.info(`[PCBox] Set "${set.name}" updated — cache invalidated`);
+        changed = true;
+      }
+      // Always update our stored timestamp
+      stored[set.id] = set.updatedAt;
+    });
+
+    if (changed) saveTimestamps(stored);
+    else saveTimestamps(stored); // still save new sets we hadn't seen before
+  } catch {
+    // Silently ignore — cache staleness check is best-effort
+  }
+}
+
+// Run staleness check in the background on startup (non-blocking)
+checkForSetUpdates();
 
 // ── Collections state ────────────────────────────────────────
 // Structure: { collections: [{id, name, cards: {cardId: card}}], activeId }
@@ -842,7 +911,7 @@ const INDEX_BIN_KEY = 'ptcg_index_bin_id';
 // Paste your index bin ID here after your first share — get it from
 // localStorage.getItem('ptcg_index_bin_id') in your browser console.
 // This lets any device find the shared index without prior setup.
-const INDEX_BIN_ID  = '6a2caf59da38895dfeb846db'; // e.g. '6634f2a9ad19ca34f8a1b2c3'
+const INDEX_BIN_ID  = ''; // e.g. '6634f2a9ad19ca34f8a1b2c3'
 
 function makeCode() {
   let code = '';

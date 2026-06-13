@@ -1244,7 +1244,30 @@ function formatPrice(price) {
   return '$' + price.toFixed(2);
 }
 
-function buildCard(card) {
+function getRaritySymbol(rarity) {
+  if (!rarity) return { symbol: '—', tier: 'common' };
+  const r = rarity.toLowerCase();
+
+  if (r.includes('hyper') || r.includes('secret') || r === 'rare rainbow')
+    return { symbol: '★★★', tier: 'hyper' };
+  if (r.includes('special illustration') || r.includes('rare ultra') || r === 'rare shiny gx')
+    return { symbol: '★★', tier: 'ultra' };
+  if (r.includes('illustration') || r.includes('full art') || r.includes('shiny') ||
+      r.includes('amazing') || r.includes('prism') || r.includes('radiant'))
+    return { symbol: '★✦', tier: 'illustration' };
+  if (r.includes('double rare') || r.includes('rare holo') || r.includes('rare v') ||
+      r.includes('rare gx') || r.includes('rare ex') || r.includes('rare break') ||
+      r.includes('rare ace'))
+    return { symbol: '★★', tier: 'holorare' };
+  if (r.includes('rare'))
+    return { symbol: '★', tier: 'rare' };
+  if (r.includes('uncommon'))
+    return { symbol: '◆', tier: 'uncommon' };
+  if (r.includes('common') || r.includes('promo'))
+    return { symbol: '●', tier: 'common' };
+
+  return { symbol: '◆', tier: 'uncommon' };
+}
   const inCol   = !!activeCards()[card.id];
   const isOwned = owned.has(card.id);
   const wrap = document.createElement('div');
@@ -1286,7 +1309,8 @@ function buildCard(card) {
   const footer = document.createElement('div');
   footer.className = 'pcard-footer';
   const price = getMarketPrice(card);
-  footer.innerHTML = `<span class="rarity-badge">${card.rarity || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
+  const { symbol, tier } = getRaritySymbol(card.rarity);
+  footer.innerHTML = `<span class="rarity-badge rarity-${tier}" title="${card.rarity || ''}">${symbol}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
 
   // Owned button
   const ownedBtn = document.createElement('button');

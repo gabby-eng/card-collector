@@ -640,21 +640,21 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   mix-blend-mode: screen;
 }
 .pcard.owned .pcard-img-wrap::after {
-  animation: holo-periodic 9s ease-in-out infinite;
+  animation: holo-periodic 22s ease-in-out infinite;
 }
-/* Total cycle: 9s
-   0–22%  (~2s): first sweep across, visible
-   22–44% (~2s): second sweep across, visible
-   44–50% (~0.5s): fade out
-   50–100% (~4.5s): invisible rest */
+/* Total cycle: 22s
+   0–18%  (~4s): first sweep across, visible
+   18–36% (~4s): second sweep across, visible
+   36–42% (~1.5s): fade out
+   42–100% (~13s): invisible rest */
 @keyframes holo-periodic {
   0%   { opacity: 0; background-position: 250% 0; }
-  5%   { opacity: 1; }
-  22%  { opacity: 1; background-position: -250% 0; }
-  23%  { opacity: 0; background-position: 250% 0; }
-  24%  { opacity: 1; }
-  44%  { opacity: 1; background-position: -250% 0; }
-  50%  { opacity: 0; background-position: -250% 0; }
+  3%   { opacity: 1; }
+  18%  { opacity: 1; background-position: -250% 0; }
+  19%  { opacity: 0; background-position: 250% 0; }
+  20%  { opacity: 1; }
+  36%  { opacity: 1; background-position: -250% 0; }
+  42%  { opacity: 0; background-position: -250% 0; }
   100% { opacity: 0; background-position: 250% 0; }
 }
 /* Gold border glow on owned cards */

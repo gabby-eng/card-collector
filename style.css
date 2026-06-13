@@ -644,17 +644,18 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
 }
 /* Total cycle: 22s
    0–18%  (~4s): first sweep across, visible
-   18–36% (~4s): second sweep across, visible
-   36–42% (~1.5s): fade out
-   42–100% (~13s): invisible rest */
+   18–22% (~1s): fade out, pause
+   22–40% (~4s): second sweep across, visible
+   40–46% (~1.5s): fade out
+   46–100% (~12s): invisible rest */
 @keyframes holo-periodic {
   0%   { opacity: 0; background-position: 250% 0; }
   3%   { opacity: 1; }
   18%  { opacity: 1; background-position: -250% 0; }
-  19%  { opacity: 0; background-position: 250% 0; }
-  20%  { opacity: 1; }
-  36%  { opacity: 1; background-position: -250% 0; }
-  42%  { opacity: 0; background-position: -250% 0; }
+  22%  { opacity: 0; background-position: 250% 0; }
+  25%  { opacity: 1; }
+  40%  { opacity: 1; background-position: -250% 0; }
+  46%  { opacity: 0; background-position: -250% 0; }
   100% { opacity: 0; background-position: 250% 0; }
 }
 /* Gold border glow on owned cards */

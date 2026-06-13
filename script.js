@@ -1,12 +1,12 @@
 // ── Config ──────────────────────────────────────────────────
 const API      = 'https://api.pokemontcg.io/v2';
-const API_KEY  = '78372518-aa47-40c9-9590-9fd68c6a4a26';
+const API_KEY  = '';
 const PAGE_SIZE = 20;
 
 // ── JSONBin config ────────────────────────────────────────────
 // Get a free API key at https://jsonbin.io → API Keys
 // Paste your key below — keep this file out of your public repo!
-const JSONBIN_KEY        = '$2a$10$Ru87abEW767x9/g728sgLuLdfLwhkuH.Aw33GsN9djnYNbSbc1PGa';
+const JSONBIN_KEY        = 'YOUR_JSONBIN_API_KEY_HERE';
 const JSONBIN_API        = 'https://api.jsonbin.io/v3';
 const JSONBIN_COLLECTION = ''; // optional: your JSONBin collection ID to organise bins
 
@@ -825,24 +825,64 @@ function renderCollectionGrid() {
 // ── Collection management ─────────────────────────────────────
 
 // ── JSONBin share via code ────────────────────────────────────
-// Converts a JSONBin bin ID (24-char hex) into a compact 6-char
-// alphanumeric code and back, using base-62 encoding.
-const CODE_CHARS = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // 34 chars, no confusable I/O
-const CODE_LEN   = 6;
+// Uses a single "index bin" on JSONBin to map short codes → bin IDs,
+// so any device with the same API key can resolve any code.
+const CODE_CHARS  = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const CODE_LEN    = 6;
+const INDEX_BIN_KEY = 'ptcg_index_bin_id'; // localStorage key for the index bin ID
 
-function binIdToCode(binId) {
-  // Take last 10 hex chars of the ID → number → base-34 → 6 chars
-  const hex = binId.slice(-10);
-  let n = BigInt('0x' + hex);
+function makeCode() {
   let code = '';
-  const base = BigInt(CODE_CHARS.length);
-  for (let i = 0; i < CODE_LEN; i++) {
-    code = CODE_CHARS[Number(n % base)] + code;
-    n = n / base;
-  }
+  for (let i = 0; i < CODE_LEN; i++)
+    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   return code;
 }
 
+function jsonbinHeaders(extra = {}) {
+  return { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, ...extra };
+}
+
+// ── Index bin helpers ─────────────────────────────────────────
+// The index bin holds { code: binId, ... } for all shared collections.
+
+async function getIndexBin() {
+  const indexBinId = localStorage.getItem(INDEX_BIN_KEY);
+  if (!indexBinId) return { id: null, index: {} };
+  const res = await fetch(`${JSONBIN_API}/b/${indexBinId}/latest`, {
+    headers: jsonbinHeaders({ 'X-Bin-Meta': 'false' }),
+  });
+  if (!res.ok) return { id: indexBinId, index: {} };
+  const index = await res.json();
+  return { id: indexBinId, index: typeof index === 'object' ? index : {} };
+}
+
+async function saveIndexBin(indexBinId, index) {
+  if (!indexBinId) {
+    // Create the index bin for the first time
+    const res = await fetch(`${JSONBIN_API}/b`, {
+      method: 'POST',
+      headers: jsonbinHeaders({ 'X-Bin-Name': 'poketcg-share-index', 'X-Bin-Private': 'false' }),
+      body: JSON.stringify(index),
+    });
+    if (!res.ok) throw new Error(`JSONBin error ${res.status}`);
+    const data = await res.json();
+    const newId = data.metadata?.id;
+    if (!newId) throw new Error('No bin ID returned for index');
+    localStorage.setItem(INDEX_BIN_KEY, newId);
+    return newId;
+  } else {
+    // Update existing index bin
+    const res = await fetch(`${JSONBIN_API}/b/${indexBinId}`, {
+      method: 'PUT',
+      headers: jsonbinHeaders(),
+      body: JSON.stringify(index),
+    });
+    if (!res.ok) throw new Error(`JSONBin error ${res.status}`);
+    return indexBinId;
+  }
+}
+
+// ── Share ─────────────────────────────────────────────────────
 async function shareViaCode() {
   if (!JSONBIN_KEY || JSONBIN_KEY === 'YOUR_JSONBIN_API_KEY_HERE') {
     alert('Add your JSONBin API key to script.js to use share codes.\n\nGet a free key at jsonbin.io');
@@ -852,11 +892,10 @@ async function shareViaCode() {
   const col = activeCol();
   if (!col) return;
 
-  // Show loading state in modal
   openShareCodeModal('<div class="spinner" style="margin:30px auto"></div>');
 
-  const cardIds      = Object.keys(col.cards);
-  const ownedInCol   = cardIds.filter(id => owned.has(id));
+  const cardIds    = Object.keys(col.cards);
+  const ownedInCol = cardIds.filter(id => owned.has(id));
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -865,27 +904,30 @@ async function shareViaCode() {
   };
 
   try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Master-Key': JSONBIN_KEY,
+    // 1. Upload the collection bin
+    const colHeaders = jsonbinHeaders({
       'X-Bin-Name': col.name.slice(0, 128),
       'X-Bin-Private': 'false',
-    };
-    if (JSONBIN_COLLECTION) headers['X-Collection-Id'] = JSONBIN_COLLECTION;
+    });
+    if (JSONBIN_COLLECTION) colHeaders['X-Collection-Id'] = JSONBIN_COLLECTION;
 
-    const res = await fetch(`${JSONBIN_API}/b`, {
+    const colRes = await fetch(`${JSONBIN_API}/b`, {
       method: 'POST',
-      headers,
+      headers: colHeaders,
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error(`JSONBin error ${res.status}`);
-    const data = await res.json();
-    const binId = data.metadata?.id;
+    if (!colRes.ok) throw new Error(`JSONBin error ${colRes.status}`);
+    const colData = await colRes.json();
+    const binId   = colData.metadata?.id;
     if (!binId) throw new Error('No bin ID returned');
 
-    const code = binIdToCode(binId);
-    // Store the mapping locally so the owner can also retrieve their own bins
-    cacheSet('sharecode:' + code, { binId }, 1000 * 60 * 60 * 24 * 30);
+    // 2. Generate a unique code and add it to the index bin
+    const { id: indexBinId, index } = await getIndexBin();
+    let code;
+    // Make sure the code isn't already taken
+    do { code = makeCode(); } while (index[code]);
+    index[code] = binId;
+    await saveIndexBin(indexBinId, index);
 
     openShareCodeModal(`
       <div style="text-align:center;padding-bottom:8px">
@@ -913,6 +955,7 @@ function copyShareCode(code) {
   setTimeout(() => { el.textContent = orig; }, 1500);
 }
 
+// ── Receive ───────────────────────────────────────────────────
 async function receiveViaCode() {
   if (!JSONBIN_KEY || JSONBIN_KEY === 'YOUR_JSONBIN_API_KEY_HERE') {
     alert('Add your JSONBin API key to script.js to use share codes.\n\nGet a free key at jsonbin.io');
@@ -943,8 +986,8 @@ async function submitShareCode() {
   const btn   = document.getElementById('share-code-submit-btn');
   const code  = input?.value.trim().toUpperCase();
   if (!code || code.length !== CODE_LEN) {
-    input?.classList.add('shake');
-    setTimeout(() => input?.classList.remove('shake'), 400);
+    input?.style.setProperty('border-color', 'var(--accent2)');
+    setTimeout(() => input?.style.removeProperty('border-color'), 800);
     return;
   }
 
@@ -952,29 +995,14 @@ async function submitShareCode() {
   btn.textContent = 'Fetching…';
 
   try {
-    // We don't store a reverse mapping (code → binId) server-side,
-    // so we search the JSONBin collection for bins with a matching name,
-    // or use the cached mapping if available.
-    // For simplicity: ask the user to also paste the full bin URL as fallback.
-    // Better: store code→binId in a dedicated "index" bin.
-    // Current approach: use the JSONBin search endpoint.
+    // 1. Look up code in the index bin
+    const { index } = await getIndexBin();
+    const binId = index[code];
+    if (!binId) throw new Error(`Code "${code}" not found. Check the code and try again.`);
 
-    // Try cache first (if this device created the bin)
-    const cached = cacheGet('sharecode:' + code);
-    let binId = cached?.binId;
-
-    if (!binId) {
-      // Search JSONBin for bins matching the code name
-      const searchRes = await fetch(`${JSONBIN_API}/b/${code}`, {
-        headers: { 'X-Master-Key': JSONBIN_KEY }
-      });
-      // JSONBin doesn't support code lookup directly — we need the bin ID.
-      // Guide the user to also share the bin ID or use the index bin approach.
-      throw new Error('Code not found on this device. Ask the sender to share the full link instead, or make sure both devices use the same JSONBin account.');
-    }
-
+    // 2. Fetch the collection bin
     const res = await fetch(`${JSONBIN_API}/b/${binId}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' }
+      headers: jsonbinHeaders({ 'X-Bin-Meta': 'false' }),
     });
     if (!res.ok) throw new Error(`JSONBin error ${res.status}`);
     const payload = await res.json();
@@ -986,6 +1014,9 @@ async function submitShareCode() {
     const errEl = document.createElement('div');
     errEl.style.cssText = 'color:var(--accent2);font-size:0.8rem;margin-top:10px;text-align:center';
     errEl.textContent = e.message;
+    // Remove any previous error
+    btn.parentElement.querySelector('.share-err')?.remove();
+    errEl.className = 'share-err';
     btn.after(errEl);
   }
 }

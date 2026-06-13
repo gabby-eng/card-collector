@@ -1230,6 +1230,20 @@ function hideCtxMenu() {
 }
 
 // ── Card DOM ──────────────────────────────────────────────────
+function getMarketPrice(card) {
+  const prices = card.tcgplayer?.prices;
+  if (!prices) return null;
+  // Prefer normal, then holofoil, then first available finish
+  const finish = prices.normal ?? prices.holofoil ?? prices.reverseHolofoil
+    ?? Object.values(prices)[0] ?? null;
+  const market = finish?.market;
+  return typeof market === 'number' ? market : null;
+}
+
+function formatPrice(price) {
+  return '$' + price.toFixed(2);
+}
+
 function buildCard(card) {
   const inCol   = !!activeCards()[card.id];
   const isOwned = owned.has(card.id);
@@ -1271,7 +1285,8 @@ function buildCard(card) {
 
   const footer = document.createElement('div');
   footer.className = 'pcard-footer';
-  footer.innerHTML = `<span class="rarity-badge">${card.rarity || '—'}</span>`;
+  const price = getMarketPrice(card);
+  footer.innerHTML = `<span class="rarity-badge">${card.rarity || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
 
   // Owned button
   const ownedBtn = document.createElement('button');
@@ -1385,6 +1400,10 @@ function openModal(card) {
       <div class="meta-item"><div class="meta-label">Number</div><div class="meta-value">${card.number ? `${card.number} / ${card.set?.printedTotal ?? card.set?.total ?? '?'}` : '—'}</div></div>
       <div class="meta-item"><div class="meta-label">Rarity</div><div class="meta-value">${card.rarity || '—'}</div></div>
       <div class="meta-item"><div class="meta-label">HP</div><div class="meta-value">${card.hp || '—'}</div></div>
+      <div class="meta-item">
+        <div class="meta-label">Market Price</div>
+        <div class="meta-value" style="color:var(--accent)">${(() => { const p = getMarketPrice(card); return p !== null ? formatPrice(p) : '—'; })()}</div>
+      </div>
       <div class="meta-item">
         <div class="meta-label">Artist</div>
         <div class="meta-value">${card.artist

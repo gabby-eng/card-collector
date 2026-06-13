@@ -505,6 +505,11 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   font-size: 0.68rem; font-weight: 600; color: var(--muted);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
+.price-badge {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--accent);
+}
 .collect-btn {
   background: none; border: 1px solid var(--border);
   border-radius: 6px; color: var(--muted);

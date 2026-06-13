@@ -829,7 +829,11 @@ function renderCollectionGrid() {
 // so any device with the same API key can resolve any code.
 const CODE_CHARS  = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const CODE_LEN    = 6;
-const INDEX_BIN_KEY = '6a2ca9def5f4af5e29e9bdcb';
+const INDEX_BIN_KEY = 'ptcg_index_bin_id';
+// Paste your index bin ID here after your first share — get it from
+// localStorage.getItem('ptcg_index_bin_id') in your browser console.
+// This lets any device find the shared index without prior setup.
+const INDEX_BIN_ID  = ''; // e.g. '6634f2a9ad19ca34f8a1b2c3'
 
 function makeCode() {
   let code = '';
@@ -864,7 +868,7 @@ async function saveIndexBin(indexBinId, index) {
     // Create the index bin for the first time
     const res = await fetch(`${JSONBIN_API}/b`, {
       method: 'POST',
-      headers: jsonbinHeaders({ 'X-Bin-Name': 'poketcg-share-index', 'X-Bin-Private': 'false' }),
+      headers: jsonbinHeaders({ 'X-Bin-Name': 'poketcg-share-index', 'X-Bin-Private': 'true' }),
       body: JSON.stringify(index),
     });
     if (!res.ok) throw new Error(`JSONBin error ${res.status}`);

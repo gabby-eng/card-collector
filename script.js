@@ -829,7 +829,7 @@ function renderCollectionGrid() {
 // so any device with the same API key can resolve any code.
 const CODE_CHARS  = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const CODE_LEN    = 6;
-const INDEX_BIN_KEY = 'ptcg_index_bin_id'; // localStorage key for the index bin ID
+const INDEX_BIN_KEY = '6a2ca9def5f4af5e29e9bdcb';
 
 function makeCode() {
   let code = '';
@@ -846,13 +846,16 @@ function jsonbinHeaders(extra = {}) {
 // The index bin holds { code: binId, ... } for all shared collections.
 
 async function getIndexBin() {
-  const indexBinId = localStorage.getItem(INDEX_BIN_KEY);
+  // Use hardcoded ID first, then fall back to localStorage
+  const indexBinId = INDEX_BIN_ID || localStorage.getItem(INDEX_BIN_KEY);
   if (!indexBinId) return { id: null, index: {} };
   const res = await fetch(`${JSONBIN_API}/b/${indexBinId}/latest`, {
     headers: jsonbinHeaders({ 'X-Bin-Meta': 'false' }),
   });
   if (!res.ok) return { id: indexBinId, index: {} };
   const index = await res.json();
+  // Also persist to localStorage so saveIndexBin can update it
+  if (indexBinId) localStorage.setItem(INDEX_BIN_KEY, indexBinId);
   return { id: indexBinId, index: typeof index === 'object' ? index : {} };
 }
 

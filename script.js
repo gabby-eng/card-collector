@@ -907,7 +907,7 @@ async function shareViaCode() {
     // 1. Upload the collection bin
     const colHeaders = jsonbinHeaders({
       'X-Bin-Name': col.name.slice(0, 128),
-      'X-Bin-Private': 'false',
+      'X-Bin-Private': 'true',
     });
     if (JSONBIN_COLLECTION) colHeaders['X-Collection-Id'] = JSONBIN_COLLECTION;
 

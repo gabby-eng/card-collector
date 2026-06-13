@@ -502,39 +502,8 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   padding: 8px 12px; border-top: 1px solid var(--border);
 }
 .rarity-badge {
-  font-size: 0.8rem;
-  letter-spacing: 0.02em;
-  cursor: default;
-  position: relative;
-  flex-shrink: 0;
-}
-/* Tier colours */
-.rarity-common    { color: var(--muted); }
-.rarity-uncommon  { color: #60a5fa; }   /* blue */
-.rarity-rare      { color: #a78bfa; }   /* purple */
-.rarity-holorare  { color: #f59e0b; }   /* amber */
-.rarity-illustration { color: #34d399; } /* teal */
-.rarity-ultra     { color: #f472b6; }   /* pink */
-.rarity-hyper     { color: var(--accent); } /* gold */
-
-/* Tooltip on hover (desktop) */
-.rarity-badge[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-size: 0.68rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
 }
 .price-badge {
   font-family: 'Exo 2', sans-serif;

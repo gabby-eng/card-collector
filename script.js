@@ -1,12 +1,12 @@
 // ── Config ──────────────────────────────────────────────────
 const API      = 'https://api.pokemontcg.io/v2';
-const API_KEY  = '';
+const API_KEY  = '78372518-aa47-40c9-9590-9fd68c6a4a26';
 const PAGE_SIZE = 20;
 
 // ── JSONBin config ────────────────────────────────────────────
 // Get a free API key at https://jsonbin.io → API Keys
 // Paste your key below — keep this file out of your public repo!
-const JSONBIN_KEY        = 'YOUR_JSONBIN_API_KEY_HERE';
+const JSONBIN_KEY        = '$2a$10$Arph0QzjFA1B4UAuBw6W2OisDl2Uv973QZaHnIAHWCdUnaNrDPsuG';
 const JSONBIN_API        = 'https://api.jsonbin.io/v3';
 const JSONBIN_COLLECTION = ''; // optional: your JSONBin collection ID to organise bins
 

@@ -604,20 +604,25 @@ function renderCollectionsBar() {
     // ── Drag and Drop (desktop) ──────────────────────────────
     tab.addEventListener('dragstart', e => {
       dragSrcId = col.id;
-      tab.classList.add('dragging');
+      // Delay adding class so the drag ghost renders before the tab fades
+      setTimeout(() => tab.classList.add('dragging'), 0);
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', col.id);
     });
     tab.addEventListener('dragend', () => {
       tab.classList.remove('dragging');
       clearDropIndicators();
+      dragSrcId = null;
     });
     tab.addEventListener('dragover', e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       if (dragSrcId && dragSrcId !== col.id) showDropIndicator(tab, e);
     });
-    tab.addEventListener('dragleave', () => clearDropIndicators());
+    tab.addEventListener('dragleave', e => {
+      // Only clear if the mouse actually left this tab (not just moved to a child)
+      if (!tab.contains(e.relatedTarget)) clearDropIndicators();
+    });
     tab.addEventListener('drop', e => {
       e.preventDefault();
       if (dragSrcId && dragSrcId !== col.id) reorderCollection(dragSrcId, col.id, e);
@@ -638,6 +643,10 @@ function renderCollectionsBar() {
   newBtn.innerHTML = '＋ New list';
   newBtn.onclick = () => createCollection();
   bar.appendChild(newBtn);
+
+  // Allow dropping anywhere on the bar (handles gaps between tabs)
+  bar.addEventListener('dragover', e => e.preventDefault());
+  bar.addEventListener('drop',     e => { e.preventDefault(); clearDropIndicators(); });
 }
 
 // ── Drag state ───────────────────────────────────────────────

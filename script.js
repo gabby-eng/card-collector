@@ -134,7 +134,7 @@ function activeCol() { return store.collections.find(c => c.id === activeColId);
 function activeCards() { return activeCol()?.cards || {}; }
 
 // ── Search state ─────────────────────────────────────────────
-let currentTab   = 'search';
+let currentTab   = localStorage.getItem('ptcg_active_tab') || 'search';
 let currentQuery = '';
 let currentType  = '';
 let currentPage  = 1;
@@ -192,6 +192,7 @@ document.addEventListener('mouseout', e => {
 renderTypeFilters();
 updateCount();
 showSearchState('idle');
+switchTab(currentTab);
 
 function renderTypeFilters() {
   const row = document.getElementById('type-filters');
@@ -217,6 +218,7 @@ function toggleType(t, chip) {
 // ── Tab switching ─────────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
+  localStorage.setItem('ptcg_active_tab', tab);
   document.getElementById('tab-search').style.display     = tab === 'search'     ? '' : 'none';
   document.getElementById('tab-collection').style.display = tab === 'collection' ? '' : 'none';
   document.querySelectorAll('.tab-bar button').forEach((b, i) => {

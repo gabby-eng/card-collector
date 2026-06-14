@@ -1287,7 +1287,8 @@ function getRaritySymbol(rarity) {
       r.includes('rare ace')) return '★★ ';
   if (r.includes('rare')) return '★ ';
   if (r.includes('uncommon')) return '◆ ';
-  if (r.includes('common') || r.includes('promo')) return '● ';
+  if (r.includes('common')) return '● ';
+  if (r.includes('promo')) return '★ promo ';
   return '';
 }
 

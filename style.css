@@ -506,12 +506,11 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   letter-spacing: 0.02em; cursor: default;
   position: relative;
 }
-.rarity-badge[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+.rarity-badge[data-tooltip] { cursor: default; }
+
+/* Shared tooltip element — positioned via JS to escape overflow:hidden */
+.rarity-tooltip {
+  position: fixed;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -520,8 +519,10 @@ button.random-btn.spinning { animation: dice-spin 0.5s ease-in-out; }
   color: var(--text);
   white-space: nowrap;
   pointer-events: none;
-  z-index: 10;
+  z-index: 500;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: opacity 0.1s;
 }
 .price-badge {
   font-family: 'Exo 2', sans-serif;

@@ -160,6 +160,35 @@ const savedTheme = localStorage.getItem('ptcg_theme') ||
 applyTheme(savedTheme);
 
 // ── Init ──────────────────────────────────────────────────────
+
+// Shared tooltip for rarity badges — uses fixed positioning to
+// escape overflow:hidden on card tiles
+const _tip = document.createElement('div');
+_tip.className = 'rarity-tooltip';
+document.body.appendChild(_tip);
+
+document.addEventListener('mouseover', e => {
+  const badge = e.target.closest('[data-tooltip]');
+  if (!badge) return;
+  _tip.textContent = badge.dataset.tooltip;
+  _tip.style.opacity = '1';
+});
+document.addEventListener('mousemove', e => {
+  if (_tip.style.opacity !== '1') return;
+  const GAP = 8;
+  const tw = _tip.offsetWidth;
+  let x = e.clientX - tw / 2;
+  let y = e.clientY - _tip.offsetHeight - GAP;
+  // Keep within viewport
+  x = Math.max(GAP, Math.min(x, window.innerWidth - tw - GAP));
+  if (y < GAP) y = e.clientY + GAP;
+  _tip.style.left = x + 'px';
+  _tip.style.top  = y + 'px';
+});
+document.addEventListener('mouseout', e => {
+  if (!e.target.closest('[data-tooltip]')) return;
+  _tip.style.opacity = '0';
+});
 renderTypeFilters();
 updateCount();
 showSearchState('idle');
@@ -1302,7 +1331,7 @@ function buildCard(card) {
   const footer = document.createElement('div');
   footer.className = 'pcard-footer';
   const price = getMarketPrice(card);
-  footer.innerHTML = `<span class="rarity-badge" title="${card.rarity || ''}">${getRaritySymbol(card.rarity) || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
+  footer.innerHTML = `<span class="rarity-badge" data-tooltip="${card.rarity || ''}">${getRaritySymbol(card.rarity) || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
 
   // Owned button
   const ownedBtn = document.createElement('button');

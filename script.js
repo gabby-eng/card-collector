@@ -1244,6 +1244,22 @@ function formatPrice(price) {
   return '$' + price.toFixed(2);
 }
 
+function getRaritySymbol(rarity) {
+  if (!rarity) return '';
+  const r = rarity.toLowerCase();
+  if (r.includes('hyper') || r.includes('secret') || r === 'rare rainbow') return '★★★ ';
+  if (r.includes('special illustration') || r.includes('rare ultra') || r === 'rare shiny gx') return '★★ ';
+  if (r.includes('illustration') || r.includes('full art') || r.includes('shiny') ||
+      r.includes('amazing') || r.includes('prism') || r.includes('radiant')) return '★✦ ';
+  if (r.includes('double rare') || r.includes('rare holo') || r.includes('rare v') ||
+      r.includes('rare gx') || r.includes('rare ex') || r.includes('rare break') ||
+      r.includes('rare ace')) return '★★ ';
+  if (r.includes('rare')) return '★ ';
+  if (r.includes('uncommon')) return '◆ ';
+  if (r.includes('common') || r.includes('promo')) return '● ';
+  return '';
+}
+
 function buildCard(card) {
   const inCol   = !!activeCards()[card.id];
   const isOwned = owned.has(card.id);
@@ -1286,7 +1302,7 @@ function buildCard(card) {
   const footer = document.createElement('div');
   footer.className = 'pcard-footer';
   const price = getMarketPrice(card);
-  footer.innerHTML = `<span class="rarity-badge">${card.rarity || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
+  footer.innerHTML = `<span class="rarity-badge">${getRaritySymbol(card.rarity)}${card.rarity || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
 
   // Owned button
   const ownedBtn = document.createElement('button');

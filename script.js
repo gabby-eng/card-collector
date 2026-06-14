@@ -1444,7 +1444,9 @@ function openModal(card) {
   const isOwned = owned.has(card.id);
 
   inner.innerHTML = `
-    <img class="modal-img" src="${card.images?.large || card.images?.small || ''}" alt="${card.name}" />
+    <img class="modal-img" src="${card.images?.large || card.images?.small || ''}" alt="${card.name}"
+         onclick="openZoom(this.src, '${card.name.replace(/'/g, "\\'")}')"
+         style="cursor:zoom-in" />
     <div class="modal-title">${card.name}</div>
     <div class="modal-meta">
       <div class="meta-item"><div class="meta-label">Set</div><div class="meta-value">${card.set?.name || '—'}</div></div>
@@ -1551,7 +1553,134 @@ function closeModalIfBg(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModal();
 }
 
-// ── Collection complete celebration ───────────────────────────
+// ── Card zoom ─────────────────────────────────────────────────
+let zoomScale  = 1;
+let zoomPanX   = 0;
+let zoomPanY   = 0;
+let zoomDragging = false;
+let zoomDragStart = { x: 0, y: 0 };
+let pinchStartDist = 0;
+let pinchStartScale = 1;
+
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 5;
+
+function openZoom(src, alt) {
+  const img = document.getElementById('zoom-img');
+  img.src = src;
+  img.alt = alt;
+  zoomScale = 1; zoomPanX = 0; zoomPanY = 0;
+  applyZoomTransform();
+  document.getElementById('zoom-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeZoom() {
+  document.getElementById('zoom-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function applyZoomTransform() {
+  const img = document.getElementById('zoom-img');
+  const container = document.getElementById('zoom-container');
+  img.style.transform = `translate(${zoomPanX}px, ${zoomPanY}px) scale(${zoomScale})`;
+  container.classList.toggle('panned', zoomScale > 1);
+}
+
+function clampPan() {
+  const img = document.getElementById('zoom-img');
+  const maxX = (img.offsetWidth  * (zoomScale - 1)) / 2;
+  const maxY = (img.offsetHeight * (zoomScale - 1)) / 2;
+  zoomPanX = Math.max(-maxX, Math.min(maxX, zoomPanX));
+  zoomPanY = Math.max(-maxY, Math.min(maxY, zoomPanY));
+}
+
+// Desktop: scroll to zoom, drag to pan
+document.getElementById('zoom-overlay').addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.2 : 0.2;
+  zoomScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoomScale + delta));
+  if (zoomScale === ZOOM_MIN) { zoomPanX = 0; zoomPanY = 0; }
+  clampPan();
+  applyZoomTransform();
+}, { passive: false });
+
+document.getElementById('zoom-container').addEventListener('mousedown', e => {
+  if (zoomScale <= 1) return;
+  e.preventDefault();
+  zoomDragging = true;
+  zoomDragStart = { x: e.clientX - zoomPanX, y: e.clientY - zoomPanY };
+});
+window.addEventListener('mousemove', e => {
+  if (!zoomDragging) return;
+  zoomPanX = e.clientX - zoomDragStart.x;
+  zoomPanY = e.clientY - zoomDragStart.y;
+  clampPan();
+  applyZoomTransform();
+});
+window.addEventListener('mouseup', () => { zoomDragging = false; });
+
+// Mobile: pinch to zoom, drag to pan
+document.getElementById('zoom-container').addEventListener('touchstart', e => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    pinchStartDist  = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    pinchStartScale = zoomScale;
+  } else if (e.touches.length === 1 && zoomScale > 1) {
+    zoomDragging  = true;
+    zoomDragStart = { x: e.touches[0].clientX - zoomPanX, y: e.touches[0].clientY - zoomPanY };
+  }
+}, { passive: false });
+
+document.getElementById('zoom-container').addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    zoomScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, pinchStartScale * (dist / pinchStartDist)));
+    if (zoomScale === ZOOM_MIN) { zoomPanX = 0; zoomPanY = 0; }
+    clampPan();
+    applyZoomTransform();
+  } else if (e.touches.length === 1 && zoomDragging) {
+    zoomPanX = e.touches[0].clientX - zoomDragStart.x;
+    zoomPanY = e.touches[0].clientY - zoomDragStart.y;
+    clampPan();
+    applyZoomTransform();
+  }
+}, { passive: false });
+
+document.getElementById('zoom-container').addEventListener('touchend', e => {
+  if (e.touches.length < 2) zoomDragging = false;
+  if (zoomScale < ZOOM_MIN + 0.1) { zoomScale = ZOOM_MIN; zoomPanX = 0; zoomPanY = 0; applyZoomTransform(); }
+});
+
+// Double-tap to toggle zoom on mobile
+let lastTap = 0;
+document.getElementById('zoom-container').addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTap < 300) {
+    zoomScale = zoomScale > 1 ? ZOOM_MIN : 2.5;
+    zoomPanX = 0; zoomPanY = 0;
+    document.getElementById('zoom-img').style.transition = 'transform 0.25s ease';
+    applyZoomTransform();
+    setTimeout(() => { document.getElementById('zoom-img').style.transition = 'transform 0.2s ease'; }, 250);
+  }
+  lastTap = now;
+});
+
+// Double-click to toggle zoom on desktop
+document.getElementById('zoom-container').addEventListener('dblclick', () => {
+  zoomScale = zoomScale > 1 ? ZOOM_MIN : 2.5;
+  zoomPanX = 0; zoomPanY = 0;
+  document.getElementById('zoom-img').style.transition = 'transform 0.25s ease';
+  applyZoomTransform();
+  setTimeout(() => { document.getElementById('zoom-img').style.transition = 'transform 0.2s ease'; }, 250);
+});
 function checkCollectionComplete(newlyOwnedCardId) {
   // Find any collection where: this card exists AND all cards are now owned
   const completedCols = store.collections.filter(col => {

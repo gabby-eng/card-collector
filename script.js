@@ -1338,8 +1338,8 @@ function buildCard(card) {
   // Owned button
   const ownedBtn = document.createElement('button');
   ownedBtn.className = 'owned-btn' + (isOwned ? ' is-owned' : '');
-  ownedBtn.title = isOwned ? 'Mark as not owned' : 'Mark as owned';
-  ownedBtn.textContent = isOwned ? '✦' : '✦';
+  ownedBtn.dataset.tooltip = isOwned ? 'Mark as not owned' : 'Mark as owned';
+  ownedBtn.textContent = '✦';
   ownedBtn.onclick = e => { e.stopPropagation(); toggleOwned(card.id, wrap, ownedBtn); };
   footer.appendChild(ownedBtn);
 
@@ -1347,6 +1347,7 @@ function buildCard(card) {
   const btn = document.createElement('button');
   btn.className = 'collect-btn' + (inCol ? ' collected' : '');
   btn.textContent = inCol ? '✓' : '+';
+  btn.dataset.tooltip = inCol ? 'In collection' : 'Add to collection';
   btn.onclick = e => { e.stopPropagation(); toggleCollect(card, btn, wrap); };
   footer.appendChild(btn);
 
@@ -1359,13 +1360,13 @@ function toggleOwned(cardId, wrap, btn) {
     owned.delete(cardId);
     wrap.classList.remove('owned');
     btn.classList.remove('is-owned');
-    btn.title = 'Mark as owned';
+    btn.dataset.tooltip = 'Mark as owned';
     wrap.querySelector('.owned-badge')?.remove();
   } else {
     owned.add(cardId);
     wrap.classList.add('owned');
     btn.classList.add('is-owned');
-    btn.title = 'Mark as not owned';
+    btn.dataset.tooltip = 'Mark as not owned';
     if (!wrap.querySelector('.owned-badge')) {
       const ob = document.createElement('div');
       ob.className = 'owned-badge'; ob.textContent = '✦';
@@ -1391,11 +1392,13 @@ function toggleCollect(card, btn, wrap) {
   if (col.cards[card.id]) {
     delete col.cards[card.id];
     btn.textContent = '+'; btn.classList.remove('collected');
+    btn.dataset.tooltip = 'Add to collection';
     wrap.classList.remove('in-collection');
     wrap.querySelector('.in-collection-badge')?.remove();
   } else {
     col.cards[card.id] = card;
     btn.textContent = '✓'; btn.classList.add('collected');
+    btn.dataset.tooltip = 'In collection';
     wrap.classList.add('in-collection');
     if (!wrap.querySelector('.in-collection-badge')) {
       const badge = document.createElement('div');

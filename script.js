@@ -1344,7 +1344,7 @@ function buildCard(card) {
   // Collect button
   const btn = document.createElement('button');
   btn.className = 'collect-btn' + (inCol ? ' collected' : '');
-  btn.textContent = inCol ? '✓ Added' : '+ Add';
+  btn.textContent = inCol ? '✓' : '+';
   btn.onclick = e => { e.stopPropagation(); toggleCollect(card, btn, wrap); };
   footer.appendChild(btn);
 
@@ -1388,12 +1388,12 @@ function toggleCollect(card, btn, wrap) {
   if (!col) return;
   if (col.cards[card.id]) {
     delete col.cards[card.id];
-    btn.textContent = '+ Add'; btn.classList.remove('collected');
+    btn.textContent = '+'; btn.classList.remove('collected');
     wrap.classList.remove('in-collection');
     wrap.querySelector('.in-collection-badge')?.remove();
   } else {
     col.cards[card.id] = card;
-    btn.textContent = '✓ Added'; btn.classList.add('collected');
+    btn.textContent = '✓'; btn.classList.add('collected');
     wrap.classList.add('in-collection');
     if (!wrap.querySelector('.in-collection-badge')) {
       const badge = document.createElement('div');
@@ -1430,7 +1430,7 @@ function openModal(card) {
       </div>
       <button class="modal-add-btn ${inThis ? 'in-col' : ''}"
               onclick="toggleModalCollect(${JSON.stringify(card).replace(/"/g,'&quot;')}, '${col.id}')">
-        ${inThis ? '✓ Added' : '+ Add'}
+        ${inThis ? '✓' : '+'}
       </button>
     </div>`;
   }).join('');

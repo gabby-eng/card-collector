@@ -160,6 +160,7 @@ const savedTheme = localStorage.getItem('ptcg_theme') ||
 applyTheme(savedTheme);
 
 // ── Init ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
 
 // Shared tooltip for rarity badges — uses fixed positioning to
 // escape overflow:hidden on card tiles
@@ -179,7 +180,6 @@ document.addEventListener('mousemove', e => {
   const tw = _tip.offsetWidth;
   let x = e.clientX - tw / 2;
   let y = e.clientY - _tip.offsetHeight - GAP;
-  // Keep within viewport
   x = Math.max(GAP, Math.min(x, window.innerWidth - tw - GAP));
   if (y < GAP) y = e.clientY + GAP;
   _tip.style.left = x + 'px';
@@ -189,10 +189,14 @@ document.addEventListener('mouseout', e => {
   if (!e.target.closest('[data-tooltip]')) return;
   _tip.style.opacity = '0';
 });
+
 renderTypeFilters();
 updateCount();
 showSearchState('idle');
 switchTab(currentTab);
+checkDeepLink();
+
+}); // end DOMContentLoaded
 
 function renderTypeFilters() {
   const row = document.getElementById('type-filters');
@@ -1540,7 +1544,6 @@ async function checkDeepLink() {
     if (data.data) openModal(data.data);
   } catch {}
 }
-checkDeepLink();
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.add('hidden');

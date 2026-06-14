@@ -1302,7 +1302,7 @@ function buildCard(card) {
   const footer = document.createElement('div');
   footer.className = 'pcard-footer';
   const price = getMarketPrice(card);
-  footer.innerHTML = `<span class="rarity-badge">${getRaritySymbol(card.rarity)}${card.rarity || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
+  footer.innerHTML = `<span class="rarity-badge" title="${card.rarity || ''}">${getRaritySymbol(card.rarity) || '—'}</span>${price !== null ? `<span class="price-badge">${formatPrice(price)}</span>` : ''}`;
 
   // Owned button
   const ownedBtn = document.createElement('button');

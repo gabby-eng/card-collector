@@ -130,6 +130,9 @@ let activeColId = store.activeId;
 // Separate from collections — a card can be owned without being in any list
 let owned = loadOwned(); // Set of card IDs
 
+// ── Favourite card ────────────────────────────────────────────
+let favoriteCard = loadFavorite(); // card object or null
+
 function activeCol() { return store.collections.find(c => c.id === activeColId); }
 function activeCards() { return activeCol()?.cards || {}; }
 
@@ -225,10 +228,16 @@ function switchTab(tab) {
   localStorage.setItem('ptcg_active_tab', tab);
   document.getElementById('tab-search').style.display     = tab === 'search'     ? '' : 'none';
   document.getElementById('tab-collection').style.display = tab === 'collection' ? '' : 'none';
+  document.getElementById('tab-stats').style.display      = tab === 'stats'      ? '' : 'none';
   document.querySelectorAll('.tab-bar button').forEach((b, i) => {
-    b.classList.toggle('active', (i === 0 && tab === 'search') || (i === 1 && tab === 'collection'));
+    b.classList.toggle('active',
+      (i === 0 && tab === 'search') ||
+      (i === 1 && tab === 'collection') ||
+      (i === 2 && tab === 'stats')
+    );
   });
   if (tab === 'collection') renderCollectionTab();
+  if (tab === 'stats')      renderStats();
 }
 
 // ── Search ────────────────────────────────────────────────────
@@ -635,7 +644,243 @@ function toggleHideOwned() {
   renderCollectionGrid();
 }
 
-function renderCollectionTab() {
+function openFavoritePicker() {
+  // Build a modal listing all cards from all collections
+  const allCardsMap = {};
+  store.collections.forEach(col => {
+    Object.values(col.cards).forEach(card => { allCardsMap[card.id] = card; });
+  });
+  const allCards = Object.values(allCardsMap).sort((a, b) => a.name.localeCompare(b.name));
+
+  if (!allCards.length) {
+    alert('Add some cards to your collections first!');
+    return;
+  }
+
+  openShareCodeModal(`
+    <div style="padding-bottom:4px">
+      <div style="font-family:'Exo 2',sans-serif;font-weight:800;font-size:1.1rem;margin-bottom:4px">
+        Choose your favourite card
+      </div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">
+        ${allCards.length} cards across your collections
+      </div>
+      <input type="search" id="fav-search" placeholder="Filter cards…"
+             style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+                    color:var(--text);font-size:15px;padding:10px 14px;outline:none;margin-bottom:10px;
+                    -webkit-appearance:none"
+             oninput="filterFavPicker()"
+             autocorrect="off" autocapitalize="none" />
+      <div id="fav-picker-list" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+        ${allCards.map(card => `
+          <div class="fav-picker-item" data-id="${card.id}"
+               onclick="setFavorite('${card.id}')"
+               style="display:flex;align-items:center;gap:10px;background:var(--bg);
+                      border:1px solid ${favoriteCard?.id === card.id ? 'var(--accent)' : 'var(--border)'};
+                      border-radius:10px;padding:8px 12px;cursor:pointer">
+            <img src="${card.images?.small || ''}" style="width:36px;border-radius:4px;flex-shrink:0" alt="${card.name}" />
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Exo 2',sans-serif;font-weight:600;font-size:0.88rem;
+                          white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${card.name}</div>
+              <div style="font-size:0.72rem;color:var(--muted)">${card.set?.name || '—'}</div>
+            </div>
+            ${favoriteCard?.id === card.id ? `<span style="color:var(--accent);font-size:1rem">⭐</span>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>`);
+}
+
+function filterFavPicker() {
+  const q = document.getElementById('fav-search')?.value.toLowerCase() || '';
+  document.querySelectorAll('.fav-picker-item').forEach(item => {
+    const name = item.querySelector('div div')?.textContent.toLowerCase() || '';
+    item.style.display = name.includes(q) ? '' : 'none';
+  });
+}
+
+function setFavorite(cardId) {
+  const allCardsMap = {};
+  store.collections.forEach(col => {
+    Object.values(col.cards).forEach(card => { allCardsMap[card.id] = card; });
+  });
+  favoriteCard = allCardsMap[cardId] || null;
+  saveFavorite();
+  closeShareCode();
+  renderStats();
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+function renderStats() {
+  const el = document.getElementById('stats-content');
+
+  const allCardsMap = {};
+  store.collections.forEach(col => {
+    Object.values(col.cards).forEach(card => { allCardsMap[card.id] = card; });
+  });
+  const allCards   = Object.values(allCardsMap);
+  const ownedCards = allCards.filter(c => owned.has(c.id));
+
+  if (!allCards.length) {
+    el.innerHTML = `<div class="state-msg"><div class="big">📊</div>
+      <h3>No stats yet</h3>
+      <p>Add some cards to your collections to see your stats.</p></div>`;
+    return;
+  }
+
+  const totalCards  = allCards.length;
+  const totalOwned  = ownedCards.length;
+  const ownedPct    = Math.round((totalOwned / totalCards) * 100);
+
+  const prices      = allCards.map(c => getMarketPrice(c)).filter(p => p !== null);
+  const ownedPrices = ownedCards.map(c => getMarketPrice(c)).filter(p => p !== null);
+  const totalValue  = prices.reduce((s, p) => s + p, 0);
+  const ownedValue  = ownedPrices.reduce((s, p) => s + p, 0);
+
+  const byValue = [...allCards]
+    .filter(c => getMarketPrice(c) !== null)
+    .sort((a, b) => getMarketPrice(b) - getMarketPrice(a));
+
+  const rarityCounts = {};
+  allCards.forEach(c => {
+    const r = c.rarity || 'Unknown';
+    rarityCounts[r] = (rarityCounts[r] || 0) + 1;
+  });
+  const rarityEntries  = Object.entries(rarityCounts).sort((a, b) => b[1] - a[1]);
+  const maxRarityCount = rarityEntries[0]?.[1] || 1;
+
+  const artistCounts = {};
+  allCards.forEach(c => {
+    if (c.artist) artistCounts[c.artist] = (artistCounts[c.artist] || 0) + 1;
+  });
+  const topArtists = Object.entries(artistCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  const colStats = store.collections.map(col => {
+    const total      = Object.keys(col.cards).length;
+    const ownedCount = Object.keys(col.cards).filter(id => owned.has(id)).length;
+    return { name: col.name, total, ownedCount, pct: total ? Math.round(ownedCount / total * 100) : 0 };
+  }).sort((a, b) => b.pct - a.pct);
+
+  el.innerHTML = `
+    ${favoriteCard ? `
+    <div class="stats-section-title">My Favourite Card</div>
+    <div class="fav-showcase">
+      <img class="fav-showcase-img" src="${favoriteCard.images?.large || favoriteCard.images?.small || ''}"
+           alt="${favoriteCard.name}"
+           onclick="openZoom(this.src, '${favoriteCard.name.replace(/'/g, "\\'")}')"
+           style="cursor:zoom-in" />
+      <div class="fav-showcase-info">
+        <div class="fav-showcase-name">${favoriteCard.name}</div>
+        <div class="fav-showcase-set">${favoriteCard.set?.name || '—'} · ${favoriteCard.number ? `${favoriteCard.number}/${favoriteCard.set?.printedTotal ?? favoriteCard.set?.total ?? '?'}` : '—'}</div>
+        <div class="fav-showcase-rarity">${getRaritySymbol(favoriteCard.rarity)}${favoriteCard.rarity || '—'}</div>
+        ${getMarketPrice(favoriteCard) !== null ? `<div class="fav-showcase-price">${formatPrice(getMarketPrice(favoriteCard))}</div>` : ''}
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="col-tool-btn" onclick="openFavoritePicker()">Change</button>
+          <button class="col-tool-btn" onclick="favoriteCard=null;saveFavorite();renderStats()" style="color:var(--accent2);border-color:var(--accent2)">Remove</button>
+        </div>
+      </div>
+    </div>` : `
+    <div class="stats-section-title">My Favourite Card</div>
+    <div class="fav-empty">
+      <div class="fav-empty-icon">⭐</div>
+      <div class="fav-empty-text">No favourite set yet</div>
+      <button class="search-btn" style="padding:10px 20px;border-radius:10px;font-size:0.85rem"
+              onclick="openFavoritePicker()">Choose a card</button>
+    </div>`}
+
+    <div class="stats-section-title">Overview</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Cards</div>
+        <div class="stat-value">${totalCards.toLocaleString()}</div>
+        <div class="stat-sub">across ${store.collections.length} collection${store.collections.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Owned</div>
+        <div class="stat-value accent">${totalOwned.toLocaleString()}</div>
+        <div class="stat-sub">${ownedPct}% of your cards</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Collection Value</div>
+        <div class="stat-value accent">${formatPrice(totalValue)}</div>
+        <div class="stat-sub">${formatPrice(ownedValue)} owned value</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Card Value</div>
+        <div class="stat-value">${prices.length ? formatPrice(totalValue / prices.length) : '—'}</div>
+        <div class="stat-sub">${prices.length} cards with pricing</div>
+      </div>
+    </div>
+
+    ${byValue.length ? `
+    <div class="stats-section-title">Most Valuable Cards</div>
+    <div class="stats-top-list">
+      ${byValue.slice(0, 5).map((card, i) => `
+        <div class="stats-top-item">
+          <div class="stats-top-rank">#${i + 1}</div>
+          <img class="stats-top-img" src="${card.images?.small || ''}" alt="${card.name}" />
+          <div class="stats-top-info">
+            <div class="stats-top-name">${card.name}</div>
+            <div class="stats-top-meta">${card.set?.name || '—'} · ${card.rarity || '—'}</div>
+          </div>
+          <div class="stats-top-value">${formatPrice(getMarketPrice(card))}</div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <div class="stats-section-title">Collection Completion</div>
+    <div class="stats-bar-list">
+      ${colStats.map(c => `
+        <div class="stats-bar-row">
+          <div class="stats-bar-label">
+            <span>${c.name}</span>
+            <span>${c.ownedCount} / ${c.total} (${c.pct}%)</span>
+          </div>
+          <div class="stats-bar-track">
+            <div class="stats-bar-fill green" style="width:${c.pct}%"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <div class="stats-section-title">Rarity Breakdown</div>
+    <div class="stats-bar-list">
+      ${rarityEntries.slice(0, 8).map(([rarity, count]) => `
+        <div class="stats-bar-row">
+          <div class="stats-bar-label">
+            <span>${getRaritySymbol(rarity)}${rarity}</span>
+            <span>${count}</span>
+          </div>
+          <div class="stats-bar-track">
+            <div class="stats-bar-fill" style="width:${Math.round(count / maxRarityCount * 100)}%"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    ${topArtists.length ? `
+    <div class="stats-section-title">Top Artists</div>
+    <div class="stats-top-list">
+      ${topArtists.map(([artist, count], i) => `
+        <div class="stats-top-item">
+          <div class="stats-top-rank">#${i + 1}</div>
+          <div class="stats-top-info">
+            <div class="stats-top-name">${artist}</div>
+            <div class="stats-top-meta">${count} card${count !== 1 ? 's' : ''} in your collections</div>
+          </div>
+          <div class="stats-top-value" style="cursor:pointer"
+               onclick="searchByArtist('${artist.replace(/'/g, "\\'")}')">Search →</div>
+        </div>`).join('')}
+    </div>` : ''}
+  `;
+
+  // Animate bars in after render
+  requestAnimationFrame(() => {
+    el.querySelectorAll('.stats-bar-fill').forEach(bar => {
+      const w = bar.style.width;
+      bar.style.width = '0%';
+      requestAnimationFrame(() => { bar.style.width = w; });
+    });
+  });
+}
+
+// ── Collections tab ───────────────────────────────────────────
   hideOwned = false;
   const btn = document.getElementById('hide-owned-btn');
   if (btn) {
@@ -1795,6 +2040,18 @@ function loadOwned() {
 
 function saveOwned() {
   localStorage.setItem('ptcg_owned', JSON.stringify([...owned]));
+}
+
+function loadFavorite() {
+  try {
+    const raw = localStorage.getItem('ptcg_favorite');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveFavorite() {
+  if (favoriteCard) localStorage.setItem('ptcg_favorite', JSON.stringify(favoriteCard));
+  else localStorage.removeItem('ptcg_favorite');
 }
 
 function updateCount() {

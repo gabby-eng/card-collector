@@ -17,6 +17,7 @@
   <div class="tab-bar">
     <button class="active" onclick="switchTab('search')">Search</button>
     <button onclick="switchTab('collection')">Collection</button>
+    <button onclick="switchTab('stats')">Stats</button>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div class="collection-count"><strong id="col-count">0</strong> cards</div>
@@ -120,6 +121,11 @@
       </button>
     </div>
     <div id="collection-grid"></div>
+  </div>
+
+  <!-- Stats tab -->
+  <div id="tab-stats" style="display:none">
+    <div id="stats-content"></div>
   </div>
 </main>
 

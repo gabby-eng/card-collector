@@ -946,7 +946,7 @@ const INDEX_BIN_KEY = 'ptcg_index_bin_id';
 // Paste your index bin ID here after your first share — get it from
 // localStorage.getItem('ptcg_index_bin_id') in your browser console.
 // This lets any device find the shared index without prior setup.
-const INDEX_BIN_ID  = ''; // e.g. '6634f2a9ad19ca34f8a1b2c3'
+const INDEX_BIN_ID  = '6a2caf59da38895dfeb846db'; // e.g. '6634f2a9ad19ca34f8a1b2c3'
 
 function makeCode() {
   let code = '';
